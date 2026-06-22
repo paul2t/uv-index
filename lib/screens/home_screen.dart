@@ -1,13 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../models/app_settings.dart';
 import '../models/uv_data.dart';
 import '../services/location_service.dart';
+import '../services/notification_service.dart';
+import '../services/settings_service.dart';
 import '../services/uv_service.dart';
 import '../services/widget_service.dart';
 import '../utils/uv_scale.dart';
 import '../widgets/uv_dial.dart';
 import '../widgets/forecast_row.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
   DateTime? _fetchedAt;
   bool _isStale = false; // true when showing cached data after a failure
+  SkinType _skinType = SkinType.iii;
 
   @override
   void initState() {
@@ -40,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _isStale = false;
     });
 
+    _skinType = await SettingsService.getSkinType();
+
     final locationResult = await _locationService.getCurrentLocation();
 
     if (locationResult is LocationFailure) {
@@ -51,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final data = await _uvService.fetch(loc.latitude, loc.longitude);
       unawaited(WidgetService.update(data));
+      unawaited(NotificationService.checkAndNotify(data));
       if (!mounted) return;
       setState(() {
         _data = data;
@@ -60,6 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       await _fallbackToCache('Network error. Showing last known data.');
     }
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+    _load();
   }
 
   Future<void> _fallbackToCache(String reason) async {
@@ -83,6 +98,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('UV Index'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _load,
@@ -107,7 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildContent() {
     final data = _data!;
     final scale = UvScale.forValue(data.now.uvi);
-    final burnMins = UvScale.minutesToBurn(data.now.uvi);
+    final burnMins =
+        UvScale.minutesToBurn(data.now.uvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;
     final safeReading = data.nextSafeReading;
     final isSafeNow = data.now.uvi < UvScale.safeThreshold;
@@ -117,12 +142,6 @@ class _HomeScreenState extends State<HomeScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
       children: [
-        const SizedBox(height: 8),
-        Text(
-          'UV Index',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold),
-        ),
         Text(
           '${data.latitude.toStringAsFixed(2)}, ${data.longitude.toStringAsFixed(2)}',
           style: TextStyle(color: Colors.grey[600]),

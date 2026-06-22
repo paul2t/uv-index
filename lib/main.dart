@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'services/background_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await BackgroundService.initialize();
+    await NotificationService.initialize();
   } catch (_) {
-    // Background widget refresh is best-effort; don't block app startup.
+    // Background widget refresh / notifications are best-effort; don't
+    // block app startup.
   }
   runApp(const UvIndexApp());
 }

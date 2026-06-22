@@ -11,6 +11,9 @@ class UvScale {
   /// Below this, it's considered safe to be outside without sun protection.
   static const double safeThreshold = 2.5;
 
+  /// At and above this, the WHO "High" band begins — protection essential.
+  static const double highThreshold = 6;
+
   /// Returns the scale category for a given UV index value.
   static UvScale forValue(double uvi) {
     if (uvi < 3) {
@@ -46,14 +49,13 @@ class UvScale {
     }
   }
 
-  /// Rough "minutes to burn" estimate for an unprotected, fair-to-medium
-  /// skin type. This is a simplified heuristic for display only — real burn
-  /// time depends heavily on individual skin type.
-  static int? minutesToBurn(double uvi) {
+  /// Rough "minutes to burn" estimate for an unprotected user. [skinFactor]
+  /// comes from [SkinType.burnFactor] — higher values burn slower. This is a
+  /// simplified heuristic for display only, not medical advice.
+  static int? minutesToBurn(double uvi, {double skinFactor = 3.0}) {
     if (uvi < 1) return null;
-    // Common approximation: ~ 200 / (UVI * skin_factor). Using factor ~3
-    // for a typical skin type gives a usable ballpark.
-    final minutes = (200 / (uvi * 3)).round();
+    // Common approximation: ~ 200 / (UVI * skin_factor).
+    final minutes = (200 / (uvi * skinFactor)).round();
     return minutes.clamp(5, 240);
   }
 }

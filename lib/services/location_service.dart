@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
+import 'settings_service.dart';
 
 /// Result of a location request, including a human-readable error reason.
 sealed class LocationResult {}
@@ -20,6 +21,11 @@ class LocationFailure extends LocationResult {
 /// for UV index — it only varies over tens of kilometres.
 class LocationService {
   Future<LocationResult> getCurrentLocation() async {
+    final manual = await SettingsService.getManualLocation();
+    if (manual != null) {
+      return LocationSuccess(manual.latitude, manual.longitude);
+    }
+
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return LocationFailure(
