@@ -25,22 +25,6 @@ enum SkinType {
     }
   }
 
-  String get label {
-    switch (this) {
-      case SkinType.i:
-        return 'Type I — Very fair, always burns';
-      case SkinType.ii:
-        return 'Type II — Fair, burns easily';
-      case SkinType.iii:
-        return 'Type III — Medium, sometimes burns';
-      case SkinType.iv:
-        return 'Type IV — Olive, rarely burns';
-      case SkinType.v:
-        return 'Type V — Brown, very rarely burns';
-      case SkinType.vi:
-        return 'Type VI — Dark brown/black, never burns';
-    }
-  }
 }
 
 /// A user-chosen location override, replacing GPS.

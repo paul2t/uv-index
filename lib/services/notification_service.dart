@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/uv_data.dart';
 import '../utils/uv_scale.dart';
@@ -12,6 +14,26 @@ class NotificationService {
   static const _channelName = 'UV alerts';
   static const _highNotificationId = 1;
   static const _safeNotificationId = 2;
+
+  // This runs from a context-free background isolate (workmanager), so the
+  // generated AppLocalizations machinery (which needs a BuildContext) isn't
+  // available — check the device locale directly instead.
+  static bool get _isFrench =>
+      ui.PlatformDispatcher.instance.locale.languageCode == 'fr';
+
+  static String get _highTitle =>
+      _isFrench ? 'UV élevé' : 'UV is now High';
+
+  static String _highBody(int value) => _isFrench
+      ? 'Indice UV : $value — la protection est essentielle.'
+      : 'UV index is $value — protection is essential.';
+
+  static String get _safeTitle =>
+      _isFrench ? 'Sortie sans risque' : 'Safe to go outside';
+
+  static String _safeBody(int threshold) => _isFrench
+      ? 'L\'indice UV est redescendu sous $threshold — aucune protection nécessaire.'
+      : 'UV index has dropped below $threshold — no protection needed.';
 
   static Future<void> initialize() async {
     await _plugin.initialize(
@@ -40,8 +62,8 @@ class NotificationService {
         await SettingsService.getNotifyHigh()) {
       await _show(
         _highNotificationId,
-        'UV is now High',
-        'UV index is ${data.now.uvi.round()} — protection is essential.',
+        _highTitle,
+        _highBody(data.now.uvi.round()),
       );
     }
 
@@ -50,9 +72,8 @@ class NotificationService {
         await SettingsService.getNotifySafe()) {
       await _show(
         _safeNotificationId,
-        'Safe to go outside',
-        'UV index has dropped below '
-            '${UvScale.safeThreshold.round()} — no protection needed.',
+        _safeTitle,
+        _safeBody(UvScale.safeThreshold.round()),
       );
     }
 

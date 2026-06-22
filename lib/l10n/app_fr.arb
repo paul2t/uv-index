@@ -1,0 +1,71 @@
+{
+  "@@locale": "fr",
+
+  "appTitle": "Indice UV",
+  "uvIndexLabel": "INDICE UV",
+
+  "uvLow": "Faible",
+  "uvModerate": "Modéré",
+  "uvHigh": "Élevé",
+  "uvVeryHigh": "Très élevé",
+  "uvExtreme": "Extrême",
+
+  "adviceLow": "Aucune protection nécessaire. Vous pouvez sortir sans risque.",
+  "adviceModerate": "Portez de la crème solaire et recherchez l'ombre à la mi-journée.",
+  "adviceHigh": "Protection indispensable. Chapeau, crème solaire, ombre de 11h à 16h.",
+  "adviceVeryHigh": "Protection renforcée. Évitez le soleil à la mi-journée. Renouvelez la crème solaire.",
+  "adviceExtreme": "Prenez toutes les précautions. Évitez de sortir à la mi-journée.",
+
+  "minutesToBurn": "~{minutes} min avant coup de soleil (sans protection)",
+
+  "safeNowWithNext": "Vous pouvez sortir sans protection maintenant. Protection à nouveau nécessaire après {time}.",
+  "safeNowAllDay": "Vous pouvez sortir sans protection pendant les prochaines 24 heures.",
+  "safeAfter": "Sans protection après {time}.",
+  "staysUnsafeAllDay": "Reste au-dessus du seuil de sécurité pour les prochaines 24 heures.",
+
+  "todaysPeak": "Pic du jour : {value} vers {time}",
+
+  "next24Hours": "Prochaines 24 heures",
+
+  "updatedAt": "Mis à jour à {time}",
+  "offlineUpdatedAt": "Hors ligne — dernière mise à jour à {time}",
+  "dataAttribution": "Données : currentuvindex.com",
+
+  "somethingWrong": "Une erreur est survenue.",
+  "retry": "Réessayer",
+
+  "locationServicesOff": "La localisation est désactivée. Activez-la dans les paramètres.",
+  "locationPermissionDenied": "Autorisation de localisation refusée.",
+  "locationPermissionDeniedForever": "Autorisation de localisation refusée définitivement. Activez-la dans les paramètres de l'application.",
+  "locationTimeout": "Délai dépassé pour obtenir votre position. Réessayez.",
+  "locationError": "Impossible d'obtenir la position : {error}",
+  "networkError": "Erreur réseau. Affichage des dernières données connues.",
+
+  "settingsTitle": "Paramètres",
+  "locationSection": "Localisation",
+  "usingCurrentLocation": "Utilisation de la position actuelle de votre appareil.",
+  "manualLocationSubtitle": "Position manuelle — appuyez pour effacer",
+  "searchLocationHint": "Rechercher une ville ou une adresse",
+  "noLocationFound": "Aucun lieu trouvé pour cette recherche.",
+  "locationSearchError": "Impossible de rechercher ce lieu.",
+
+  "skinTypeSection": "Type de peau",
+  "skinTypeDescription": "Utilisé pour estimer le temps avant coup de soleil. Ne constitue pas un avis médical.",
+  "skinType1": "Type I — Très claire, brûle toujours",
+  "skinType2": "Type II — Claire, brûle facilement",
+  "skinType3": "Type III — Moyenne, brûle parfois",
+  "skinType4": "Type IV — Mate, brûle rarement",
+  "skinType5": "Type V — Brune, brûle très rarement",
+  "skinType6": "Type VI — Brun foncé/noire, ne brûle jamais",
+
+  "refreshSection": "Actualisation en arrière-plan",
+  "refreshDescription": "Fréquence de mise à jour du widget d'écran d'accueil en arrière-plan.",
+  "minutesOption": "{minutes} minutes",
+  "hoursOption": "{hours} h",
+
+  "notificationsSection": "Notifications",
+  "notifyHighTitle": "L'indice UV devient élevé",
+  "notifyHighSubtitle": "Avertir lorsque la protection devient indispensable",
+  "notifySafeTitle": "Sortie sans risque",
+  "notifySafeSubtitle": "Avertir quand l'indice UV redescend à un niveau sûr"
+}

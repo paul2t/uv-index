@@ -3,5 +3,5 @@
     <string name="app_name">UV Index</string>
     <string name="widget_picker_label">UV Index (1x1)</string>
     <string name="widget_label">UV Index</string>
-    <string name="uv_widget_small_description">Compact 1x1 UV index display</string>
+    <string name="uv_widget_small_description">Widget UV compact (1x1)</string>
 </resources>

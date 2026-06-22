@@ -7,10 +7,10 @@ class WidgetService {
   static const String _androidWidgetName = 'UvWidgetSmallProvider';
 
   static Future<void> update(UvData data) async {
-    final scale = UvScale.forValue(data.now.uvi);
+    final color = UvScale.colorForValue(data.now.uvi);
 
     await HomeWidget.saveWidgetData<int>('uv_value', data.now.uvi.round());
-    await HomeWidget.saveWidgetData<int>('uv_color', scale.color.toARGB32());
+    await HomeWidget.saveWidgetData<int>('uv_color', color.toARGB32());
 
     await HomeWidget.updateWidget(androidName: _androidWidgetName);
   }

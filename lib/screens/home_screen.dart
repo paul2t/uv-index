@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 import '../models/uv_data.dart';
 import '../services/location_service.dart';
@@ -50,7 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final locationResult = await _locationService.getCurrentLocation();
 
     if (locationResult is LocationFailure) {
-      await _fallbackToCache(locationResult.message);
+      if (!mounted) return;
+      await _fallbackToCache(_locationErrorMessage(locationResult));
       return;
     }
 
@@ -66,7 +68,24 @@ class _HomeScreenState extends State<HomeScreen> {
         _status = _Status.ready;
       });
     } catch (e) {
-      await _fallbackToCache('Network error. Showing last known data.');
+      if (!mounted) return;
+      await _fallbackToCache(AppLocalizations.of(context)!.networkError);
+    }
+  }
+
+  String _locationErrorMessage(LocationFailure failure) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (failure.reason) {
+      case LocationFailureReason.servicesDisabled:
+        return l10n.locationServicesOff;
+      case LocationFailureReason.permissionDenied:
+        return l10n.locationPermissionDenied;
+      case LocationFailureReason.permissionDeniedForever:
+        return l10n.locationPermissionDeniedForever;
+      case LocationFailureReason.timeout:
+        return l10n.locationTimeout;
+      case LocationFailureReason.unknown:
+        return l10n.locationError(failure.detail ?? '');
     }
   }
 
@@ -99,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UV Index'),
+        title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -121,7 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case _Status.loading:
         return const Center(child: CircularProgressIndicator());
       case _Status.error:
-        return _ErrorView(message: _errorMessage ?? 'Something went wrong.',
+        return _ErrorView(
+            message: _errorMessage ?? AppLocalizations.of(context)!.somethingWrong,
             onRetry: _load);
       case _Status.ready:
         return _buildContent();
@@ -129,8 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildContent() {
+    final l10n = AppLocalizations.of(context)!;
     final data = _data!;
-    final scale = UvScale.forValue(data.now.uvi);
+    final scale = UvScale.forValue(data.now.uvi, l10n);
     final burnMins =
         UvScale.minutesToBurn(data.now.uvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;
@@ -161,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(fontSize: 15, height: 1.4)),
                 if (burnMins != null) ...[
                   const SizedBox(height: 8),
-                  Text('~$burnMins min to burn (unprotected)',
+                  Text(l10n.minutesToBurn(burnMins),
                       style: TextStyle(
                           color: Colors.grey[700],
                           fontStyle: FontStyle.italic)),
@@ -170,15 +191,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   isSafeNow
                       ? unsafeReading != null
-                          ? 'Safe to be outside without protection now. '
-                              'Protection needed again after '
-                              '${_formatHour(unsafeReading.time.hour)}.'
-                          : 'Safe to be outside without protection for the '
-                              'next 24 hours.'
+                          ? l10n.safeNowWithNext(
+                              _formatHour(context, unsafeReading.time.hour))
+                          : l10n.safeNowAllDay
                       : safeReading != null
-                          ? 'Safe without protection after '
-                              '${_formatHour(safeReading.time.hour)}.'
-                          : 'Stays above safe levels for the next 24 hours.',
+                          ? l10n.safeAfter(
+                              _formatHour(context, safeReading.time.hour))
+                          : l10n.staysUnsafeAllDay,
                   style: TextStyle(
                       color: Colors.grey[700], fontStyle: FontStyle.italic),
                 ),
@@ -189,8 +208,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (peak != null) ...[
           const SizedBox(height: 16),
           Text(
-            "Today's peak: ${peak.uvi.toStringAsFixed(0)} "
-            "around ${_formatHour(peak.time.hour)}",
+            l10n.todaysPeak(peak.uvi.toStringAsFixed(0),
+                _formatHour(context, peak.time.hour)),
             style: const TextStyle(fontSize: 15),
           ),
         ],
@@ -201,8 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Center(
             child: Text(
               _isStale
-                  ? 'Offline — last updated ${_formatTime(_fetchedAt!)}'
-                  : 'Updated ${_formatTime(_fetchedAt!)}',
+                  ? l10n.offlineUpdatedAt(_formatTime(context, _fetchedAt!))
+                  : l10n.updatedAt(_formatTime(context, _fetchedAt!)),
               style: TextStyle(
                   fontSize: 12,
                   color: _isStale ? Colors.orange[800] : Colors.grey[500]),
@@ -210,23 +229,32 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         const SizedBox(height: 8),
         Center(
-          child: Text('Data: currentuvindex.com',
+          child: Text(l10n.dataAttribution,
               style: TextStyle(fontSize: 11, color: Colors.grey[400])),
         ),
       ],
     );
   }
 
-  String _formatHour(int hour) {
+  /// Locale-aware hour formatting: 24h digits for French, 12h am/pm short
+  /// form for English and other locales.
+  String _formatHour(BuildContext context, int hour) {
+    if (Localizations.localeOf(context).languageCode == 'fr') {
+      return '${hour}h';
+    }
     if (hour == 0) return '12am';
     if (hour < 12) return '${hour}am';
     if (hour == 12) return '12pm';
     return '${hour - 12}pm';
   }
 
-  String _formatTime(DateTime t) {
-    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+  String _formatTime(BuildContext context, DateTime t) {
     final m = t.minute.toString().padLeft(2, '0');
+    if (Localizations.localeOf(context).languageCode == 'fr') {
+      final h = t.hour.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
     final ampm = t.hour < 12 ? 'am' : 'pm';
     return '$h:$m$ampm';
   }
@@ -253,7 +281,9 @@ class _ErrorView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Center(
-          child: FilledButton(onPressed: onRetry, child: const Text('Retry')),
+          child: FilledButton(
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context)!.retry)),
         ),
       ],
     );

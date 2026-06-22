@@ -1,0 +1,101 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "UV Index",
+  "uvIndexLabel": "UV INDEX",
+
+  "uvLow": "Low",
+  "uvModerate": "Moderate",
+  "uvHigh": "High",
+  "uvVeryHigh": "Very High",
+  "uvExtreme": "Extreme",
+
+  "adviceLow": "No protection needed. Safe to be outside.",
+  "adviceModerate": "Wear sunscreen and seek shade around midday.",
+  "adviceHigh": "Protection essential. Hat, sunscreen, shade 11am–4pm.",
+  "adviceVeryHigh": "Extra protection. Avoid sun midday. Reapply sunscreen.",
+  "adviceExtreme": "Take all precautions. Avoid being outside midday.",
+
+  "minutesToBurn": "~{minutes} min to burn (unprotected)",
+  "@minutesToBurn": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "safeNowWithNext": "Safe to be outside without protection now. Protection needed again after {time}.",
+  "@safeNowWithNext": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "safeNowAllDay": "Safe to be outside without protection for the next 24 hours.",
+  "safeAfter": "Safe without protection after {time}.",
+  "@safeAfter": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "staysUnsafeAllDay": "Stays above safe levels for the next 24 hours.",
+
+  "todaysPeak": "Today's peak: {value} around {time}",
+  "@todaysPeak": {
+    "placeholders": {
+      "value": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+
+  "next24Hours": "Next 24 hours",
+
+  "updatedAt": "Updated {time}",
+  "@updatedAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "offlineUpdatedAt": "Offline — last updated {time}",
+  "@offlineUpdatedAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "dataAttribution": "Data: currentuvindex.com",
+
+  "somethingWrong": "Something went wrong.",
+  "retry": "Retry",
+
+  "locationServicesOff": "Location services are off. Enable them in settings.",
+  "locationPermissionDenied": "Location permission denied.",
+  "locationPermissionDeniedForever": "Location permission permanently denied. Enable it in app settings.",
+  "locationTimeout": "Timed out getting your location. Try again.",
+  "locationError": "Could not get location: {error}",
+  "@locationError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "networkError": "Network error. Showing last known data.",
+
+  "settingsTitle": "Settings",
+  "locationSection": "Location",
+  "usingCurrentLocation": "Using your device's current location.",
+  "manualLocationSubtitle": "Manual override — tap to clear",
+  "searchLocationHint": "Search city or address",
+  "noLocationFound": "No location found for that search.",
+  "locationSearchError": "Could not search for that location.",
+
+  "skinTypeSection": "Skin type",
+  "skinTypeDescription": "Used to estimate time-to-burn. Not medical advice.",
+  "skinType1": "Type I — Very fair, always burns",
+  "skinType2": "Type II — Fair, burns easily",
+  "skinType3": "Type III — Medium, sometimes burns",
+  "skinType4": "Type IV — Olive, rarely burns",
+  "skinType5": "Type V — Brown, very rarely burns",
+  "skinType6": "Type VI — Dark brown/black, never burns",
+
+  "refreshSection": "Background refresh",
+  "refreshDescription": "How often the home-screen widget updates in the background.",
+  "minutesOption": "{minutes} minutes",
+  "@minutesOption": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "hoursOption": "{hours}h",
+  "@hoursOption": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+
+  "notificationsSection": "Notifications",
+  "notifyHighTitle": "UV becomes High",
+  "notifyHighSubtitle": "Notify when protection becomes essential",
+  "notifySafeTitle": "Safe to go outside",
+  "notifySafeSubtitle": "Notify when UV drops back to a safe level"
+}

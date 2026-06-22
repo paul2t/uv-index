@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 import '../services/background_service.dart';
 import '../services/geocoding_service.dart';
 import '../services/settings_service.dart';
+
+String _skinTypeLabel(AppLocalizations l10n, SkinType type) {
+  switch (type) {
+    case SkinType.i:
+      return l10n.skinType1;
+    case SkinType.ii:
+      return l10n.skinType2;
+    case SkinType.iii:
+      return l10n.skinType3;
+    case SkinType.iv:
+      return l10n.skinType4;
+    case SkinType.v:
+      return l10n.skinType5;
+    case SkinType.vi:
+      return l10n.skinType6;
+  }
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -82,13 +100,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final result = await GeocodingService.search(_locationController.text);
       if (result == null) {
-        setState(() => _searchError = 'No location found for that search.');
+        if (mounted) {
+          setState(() =>
+              _searchError = AppLocalizations.of(context)!.noLocationFound);
+        }
         return;
       }
       await SettingsService.setManualLocation(result);
       setState(() => _manualLocation = result);
     } catch (e) {
-      setState(() => _searchError = 'Could not search for that location.');
+      if (mounted) {
+        setState(() =>
+            _searchError = AppLocalizations.of(context)!.locationSearchError);
+      }
     } finally {
       if (mounted) setState(() => _searching = false);
     }
@@ -104,35 +128,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _SectionHeader('Location'),
+                _SectionHeader(l10n.locationSection),
                 if (_manualLocation != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.location_on_outlined),
                     title: Text(_manualLocation!.label),
-                    subtitle: const Text('Manual override — tap to clear'),
+                    subtitle: Text(l10n.manualLocationSubtitle),
                     trailing: const Icon(Icons.close),
                     onTap: _clearManualLocation,
                   )
                 else
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: Text('Using your device\'s current location.'),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(l10n.usingCurrentLocation),
                   ),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _locationController,
-                        decoration: const InputDecoration(
-                          hintText: 'Search city or address',
+                        decoration: InputDecoration(
+                          hintText: l10n.searchLocationHint,
                           isDense: true,
                         ),
                         onSubmitted: (_) => _searchLocation(),
@@ -158,10 +183,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: TextStyle(color: Theme.of(context).colorScheme.error)),
                   ),
                 const SizedBox(height: 24),
-                _SectionHeader('Skin type'),
-                const Text(
-                  'Used to estimate time-to-burn. Not medical advice.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                _SectionHeader(l10n.skinTypeSection),
+                Text(
+                  l10n.skinTypeDescription,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
                 DropdownButton<SkinType>(
@@ -170,16 +195,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   items: SkinType.values
                       .map((t) => DropdownMenuItem(
                             value: t,
-                            child: Text(t.label),
+                            child: Text(_skinTypeLabel(l10n, t)),
                           ))
                       .toList(),
                   onChanged: _onSkinTypeChanged,
                 ),
                 const SizedBox(height: 24),
-                _SectionHeader('Background refresh'),
-                const Text(
-                  'How often the home-screen widget updates in the background.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                _SectionHeader(l10n.refreshSection),
+                Text(
+                  l10n.refreshDescription,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
                 DropdownButton<int>(
@@ -188,24 +213,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   items: SettingsService.refreshIntervalOptions
                       .map((m) => DropdownMenuItem(
                             value: m,
-                            child: Text(m < 60 ? '$m minutes' : '${m ~/ 60}h'),
+                            child: Text(m < 60
+                                ? l10n.minutesOption(m)
+                                : l10n.hoursOption(m ~/ 60)),
                           ))
                       .toList(),
                   onChanged: _onRefreshIntervalChanged,
                 ),
                 const SizedBox(height: 24),
-                _SectionHeader('Notifications'),
+                _SectionHeader(l10n.notificationsSection),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('UV becomes High'),
-                  subtitle: const Text('Notify when protection becomes essential'),
+                  title: Text(l10n.notifyHighTitle),
+                  subtitle: Text(l10n.notifyHighSubtitle),
                   value: _notifyHigh,
                   onChanged: _onNotifyHighChanged,
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Safe to go outside'),
-                  subtitle: const Text('Notify when UV drops back to a safe level'),
+                  title: Text(l10n.notifySafeTitle),
+                  subtitle: Text(l10n.notifySafeSubtitle),
                   value: _notifySafe,
                   onChanged: _onNotifySafeChanged,
                 ),

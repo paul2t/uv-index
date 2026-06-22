@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/uv_data.dart';
 import '../utils/uv_scale.dart';
+
+/// Short hour label, locale-aware: 24h digits for French, 12h am/pm for
+/// English and other locales.
+String _shortHourLabel(BuildContext context, int hour) {
+  if (Localizations.localeOf(context).languageCode == 'fr') {
+    return '${hour}h';
+  }
+  if (hour == 0) return '12a';
+  if (hour < 12) return '${hour}a';
+  if (hour == 12) return '12p';
+  return '${hour - 12}p';
+}
 
 const double _chartHeight = 100;
 const double _barWidth = 14;
@@ -27,11 +40,11 @@ class ForecastRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'Next 24 hours',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            AppLocalizations.of(context)!.next24Hours,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
         SizedBox(
@@ -105,15 +118,9 @@ class _HourBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = UvScale.forValue(reading.uvi);
+    final scale = UvScale.forValue(reading.uvi, AppLocalizations.of(context)!);
     final hour = reading.time.hour;
-    final label = hour == 0
-        ? '12a'
-        : hour < 12
-            ? '${hour}a'
-            : hour == 12
-                ? '12p'
-                : '${hour - 12}p';
+    final label = _shortHourLabel(context, hour);
 
     final barHeight =
         ((reading.uvi / chartMax).clamp(0.0, 1.0) * _chartHeight)

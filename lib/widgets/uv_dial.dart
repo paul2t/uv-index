@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../utils/uv_scale.dart';
 
 /// The big circular UV index display — number, color band, and risk label.
@@ -9,7 +10,8 @@ class UvDial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = UvScale.forValue(uvi);
+    final l10n = AppLocalizations.of(context)!;
+    final scale = UvScale.forValue(uvi, l10n);
 
     return Container(
       width: 220,
@@ -31,7 +33,7 @@ class UvDial extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'UV INDEX',
+            l10n.uvIndexLabel,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.85),
               fontSize: 14,

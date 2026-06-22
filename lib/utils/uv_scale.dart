@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// WHO UV Index categories: color bands, risk labels, and safety advice.
 class UvScale {
@@ -15,38 +16,30 @@ class UvScale {
   static const double highThreshold = 6;
 
   /// Returns the scale category for a given UV index value.
-  static UvScale forValue(double uvi) {
+  static UvScale forValue(double uvi, AppLocalizations l10n) {
     if (uvi < 3) {
-      return const UvScale._(
-        'Low',
-        Color(0xFF558B2F), // green
-        'No protection needed. Safe to be outside.',
-      );
+      return UvScale._(l10n.uvLow, colorForValue(uvi), l10n.adviceLow);
     } else if (uvi < 6) {
-      return const UvScale._(
-        'Moderate',
-        Color(0xFFF9A825), // yellow
-        'Wear sunscreen and seek shade around midday.',
-      );
+      return UvScale._(
+          l10n.uvModerate, colorForValue(uvi), l10n.adviceModerate);
     } else if (uvi < 8) {
-      return const UvScale._(
-        'High',
-        Color(0xFFEF6C00), // orange
-        'Protection essential. Hat, sunscreen, shade 11am–4pm.',
-      );
+      return UvScale._(l10n.uvHigh, colorForValue(uvi), l10n.adviceHigh);
     } else if (uvi < 11) {
-      return const UvScale._(
-        'Very High',
-        Color(0xFFD32F2F), // red
-        'Extra protection. Avoid sun midday. Reapply sunscreen.',
-      );
+      return UvScale._(
+          l10n.uvVeryHigh, colorForValue(uvi), l10n.adviceVeryHigh);
     } else {
-      return const UvScale._(
-        'Extreme',
-        Color(0xFF7B1FA2), // purple
-        'Take all precautions. Avoid being outside midday.',
-      );
+      return UvScale._(l10n.uvExtreme, colorForValue(uvi), l10n.adviceExtreme);
     }
+  }
+
+  /// Color band only — usable without [AppLocalizations] (e.g. the
+  /// home-screen widget, updated from a context-free background isolate).
+  static Color colorForValue(double uvi) {
+    if (uvi < 3) return const Color(0xFF558B2F); // green
+    if (uvi < 6) return const Color(0xFFF9A825); // yellow
+    if (uvi < 8) return const Color(0xFFEF6C00); // orange
+    if (uvi < 11) return const Color(0xFFD32F2F); // red
+    return const Color(0xFF7B1FA2); // purple
   }
 
   /// Rough "minutes to burn" estimate for an unprotected user. [skinFactor]

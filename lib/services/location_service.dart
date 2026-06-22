@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'settings_service.dart';
 
-/// Result of a location request, including a human-readable error reason.
+/// Result of a location request, including a machine-readable error reason
+/// (the UI maps this to a localized message).
 sealed class LocationResult {}
 
 class LocationSuccess extends LocationResult {
@@ -12,9 +13,18 @@ class LocationSuccess extends LocationResult {
   LocationSuccess(this.latitude, this.longitude);
 }
 
+enum LocationFailureReason {
+  servicesDisabled,
+  permissionDenied,
+  permissionDeniedForever,
+  timeout,
+  unknown,
+}
+
 class LocationFailure extends LocationResult {
-  final String message;
-  LocationFailure(this.message);
+  final LocationFailureReason reason;
+  final String? detail;
+  LocationFailure(this.reason, {this.detail});
 }
 
 /// Wraps geolocator with permission handling. Coarse accuracy is enough
@@ -28,21 +38,19 @@ class LocationService {
 
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return LocationFailure(
-          'Location services are off. Enable them in settings.');
+      return LocationFailure(LocationFailureReason.servicesDisabled);
     }
 
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        return LocationFailure('Location permission denied.');
+        return LocationFailure(LocationFailureReason.permissionDenied);
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      return LocationFailure(
-          'Location permission permanently denied. Enable it in app settings.');
+      return LocationFailure(LocationFailureReason.permissionDeniedForever);
     }
 
     try {
@@ -54,9 +62,9 @@ class LocationService {
       );
       return LocationSuccess(position.latitude, position.longitude);
     } on TimeoutException {
-      return LocationFailure('Timed out getting your location. Try again.');
+      return LocationFailure(LocationFailureReason.timeout);
     } catch (e) {
-      return LocationFailure('Could not get location: $e');
+      return LocationFailure(LocationFailureReason.unknown, detail: '$e');
     }
   }
 }
