@@ -24,7 +24,7 @@
             android:gravity="center"
             android:text="--"
             android:textColor="#FFFFFFFF"
-            android:textSize="20sp"
+            android:textSize="26sp"
             android:textStyle="bold" />
     </FrameLayout>
 
@@ -32,7 +32,7 @@
         android:id="@+id/widget_app_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
+        android:layout_marginTop="5dp"
         android:text="UV Index"
         android:textColor="#FFFFFFFF"
         android:textSize="12sp"
