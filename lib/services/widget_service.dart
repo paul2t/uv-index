@@ -2,9 +2,12 @@ import 'package:home_widget/home_widget.dart';
 import '../models/uv_data.dart';
 import '../utils/uv_scale.dart';
 
-/// Pushes the latest UV reading to the Android home-screen widget.
+/// Pushes the latest UV reading to the Android home-screen widgets.
 class WidgetService {
-  static const String _androidWidgetName = 'UvWidgetProvider';
+  static const List<String> _androidWidgetNames = [
+    'UvWidgetProvider',
+    'UvWidgetSmallProvider',
+  ];
 
   static Future<void> update(UvData data) async {
     final scale = UvScale.forValue(data.now.uvi);
@@ -16,7 +19,9 @@ class WidgetService {
     await HomeWidget.saveWidgetData<String>(
         'uv_updated_at', _formatTime(now));
 
-    await HomeWidget.updateWidget(androidName: _androidWidgetName);
+    for (final name in _androidWidgetNames) {
+      await HomeWidget.updateWidget(androidName: name);
+    }
   }
 
   static String _formatTime(DateTime t) {

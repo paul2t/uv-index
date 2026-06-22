@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="uv_widget_description">Shows the current UV index</string>
+    <string name="uv_widget_small_description">Compact 1x1 UV index display</string>
 </resources>
