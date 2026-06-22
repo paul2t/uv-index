@@ -98,4 +98,15 @@ class UvData {
     }
     return null;
   }
+
+  /// The next upcoming hour (within 24h) where UV is expected to rise back
+  /// to or above [UvScale.safeThreshold], i.e. protection becomes needed
+  /// again. Returns null if it's already unsafe now, or stays safe all day.
+  UvReading? get nextUnsafeReading {
+    if (now.uvi >= UvScale.safeThreshold) return null;
+    for (final r in upcomingHours) {
+      if (r.uvi >= UvScale.safeThreshold) return r;
+    }
+    return null;
+  }
 }

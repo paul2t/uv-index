@@ -135,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
         UvScale.minutesToBurn(data.now.uvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;
     final safeReading = data.nextSafeReading;
+    final unsafeReading = data.nextUnsafeReading;
     final isSafeNow = data.now.uvi < UvScale.safeThreshold;
 
     return ListView(
@@ -168,7 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Text(
                   isSafeNow
-                      ? 'Safe to be outside without protection now.'
+                      ? unsafeReading != null
+                          ? 'Safe to be outside without protection now. '
+                              'Protection needed again after '
+                              '${_formatHour(unsafeReading.time.hour)}.'
+                          : 'Safe to be outside without protection for the '
+                              'next 24 hours.'
                       : safeReading != null
                           ? 'Safe without protection after '
                               '${_formatHour(safeReading.time.hour)}.'
