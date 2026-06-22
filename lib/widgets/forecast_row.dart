@@ -3,7 +3,8 @@ import '../models/uv_data.dart';
 import '../utils/uv_scale.dart';
 
 const double _chartHeight = 100;
-const double _barWidth = 20;
+const double _barWidth = 14;
+const double _itemWidth = 24;
 
 /// A horizontally scrolling histogram of upcoming hourly UV readings.
 class ForecastRow extends StatelessWidget {
@@ -47,7 +48,7 @@ class ForecastRow extends StatelessWidget {
               ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: readings.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                separatorBuilder: (_, __) => const SizedBox(width: 2),
                 itemBuilder: (context, i) {
                   final reading = readings[i];
                   final isNow = reading.time.year == now.year &&
@@ -117,15 +118,18 @@ class _HourBar extends StatelessWidget {
     final barHeight =
         ((reading.uvi / chartMax).clamp(0.0, 1.0) * _chartHeight)
             .clamp(4.0, _chartHeight);
+    // Only label every 3rd hour to keep the axis readable at tight spacing,
+    // but always label the current hour.
+    final showLabel = hour % 3 == 0 || isNow;
 
     return SizedBox(
-      width: 36,
+      width: _itemWidth,
       child: Column(
         children: [
           Text(
             reading.uvi.toStringAsFixed(0),
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
               color: isNow ? scale.color : Colors.grey[700],
             ),
@@ -141,7 +145,7 @@ class _HourBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scale.color.withValues(alpha: isNow ? 1.0 : 0.55),
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(5)),
+                      const BorderRadius.vertical(top: Radius.circular(4)),
                   border: isNow ? Border.all(color: scale.color, width: 1.5) : null,
                 ),
               ),
@@ -149,9 +153,9 @@ class _HourBar extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            label,
+            showLabel ? label : '',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
               color: isNow ? Colors.black87 : Colors.grey[600],
             ),
