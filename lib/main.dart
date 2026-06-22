@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
@@ -6,14 +8,21 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(const UvIndexApp());
+
+  // Best-effort: run after the UI is already up so a stuck permission
+  // dialog (e.g. POST_NOTIFICATIONS on Android 13+) or a slow platform
+  // channel call can never block the app from showing its first frame.
+  unawaited(_initBackgroundServices());
+}
+
+Future<void> _initBackgroundServices() async {
   try {
     await BackgroundService.initialize();
     await NotificationService.initialize();
   } catch (_) {
-    // Background widget refresh / notifications are best-effort; don't
-    // block app startup.
+    // Background widget refresh / notifications are best-effort.
   }
-  runApp(const UvIndexApp());
 }
 
 // Material 3 defaults to a "stretch" overscroll effect on Android; this
