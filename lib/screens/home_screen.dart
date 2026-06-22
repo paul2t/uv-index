@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../models/uv_data.dart';
 import '../services/location_service.dart';
 import '../services/uv_service.dart';
+import '../services/widget_service.dart';
 import '../utils/uv_scale.dart';
 import '../widgets/uv_dial.dart';
 import '../widgets/forecast_row.dart';
@@ -47,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final loc = locationResult as LocationSuccess;
     try {
       final data = await _uvService.fetch(loc.latitude, loc.longitude);
+      unawaited(WidgetService.update(data));
       if (!mounted) return;
       setState(() {
         _data = data;
