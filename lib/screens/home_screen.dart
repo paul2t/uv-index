@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorMessage;
   DateTime? _fetchedAt;
   bool _isStale = false; // true when showing cached data after a failure
+  bool _refreshing = false; // a fetch is in flight while data is already shown
   SkinType _skinType = SkinType.iii;
 
   @override
@@ -41,9 +42,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
+    // Only blank the screen to a spinner on the very first load. If we
+    // already have data on screen (e.g. returning from Settings, or a
+    // pull-to-refresh), keep showing it and refresh quietly in the
+    // background instead.
+    final hasDataAlready = _data != null;
     setState(() {
-      _status = _Status.loading;
-      _isStale = false;
+      if (!hasDataAlready) _status = _Status.loading;
+      _refreshing = true;
     });
 
     _skinType = await SettingsService.getSkinType();
@@ -53,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (locationResult is LocationFailure) {
       if (!mounted) return;
       await _fallbackToCache(_locationErrorMessage(locationResult));
+      if (mounted) setState(() => _refreshing = false);
       return;
     }
 
@@ -65,11 +72,14 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _data = data;
         _fetchedAt = DateTime.now();
+        _isStale = false;
         _status = _Status.ready;
+        _refreshing = false;
       });
     } catch (e) {
       if (!mounted) return;
       await _fallbackToCache(AppLocalizations.of(context)!.networkError);
+      if (mounted) setState(() => _refreshing = false);
     }
   }
 
@@ -125,6 +135,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _openSettings,
           ),
         ],
+        bottom: _refreshing && _status == _Status.ready
+            ? const PreferredSize(
+                preferredSize: Size.fromHeight(2),
+                child: LinearProgressIndicator(minHeight: 2),
+              )
+            : null,
       ),
       body: SafeArea(
         child: RefreshIndicator(
