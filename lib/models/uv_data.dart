@@ -9,6 +9,7 @@
 ///   "forecast": [ { "time": "...", "uvi": 8.3 }, ... ],
 ///   "history": [ { "time": "...", "uvi": 2.9 }, ... ]
 /// }
+library;
 
 class UvReading {
   final DateTime time;

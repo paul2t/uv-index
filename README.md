@@ -24,27 +24,12 @@ pubspec.yaml                 dependencies
 You need Flutter installed (https://docs.flutter.dev/get-started/install)
 and Android Studio with an emulator or a physical device.
 
-1. Create the platform folders. From inside the project directory:
-   ```
-   flutter create .
-   ```
-   This generates the `android/`, `ios/`, etc. folders without touching
-   your `lib/` code.
-
-2. Add permissions to `android/app/src/main/AndroidManifest.xml`. Inside
-   `<manifest>`, before `<application>`, add the two lines from
-   `AndroidManifest_permissions_snippet.xml`:
-   ```xml
-   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-   <uses-permission android:name="android.permission.INTERNET" />
-   ```
-
-3. Install dependencies:
+1. Install dependencies:
    ```
    flutter pub get
    ```
 
-4. Run it:
+2. Run it:
    ```
    flutter run
    ```
