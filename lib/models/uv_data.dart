@@ -11,6 +11,8 @@
 /// }
 library;
 
+import '../utils/uv_scale.dart';
+
 class UvReading {
   final DateTime time;
   final double uvi;
@@ -84,5 +86,16 @@ class UvData {
         r.time.day == today.day);
     if (todayReadings.isEmpty) return null;
     return todayReadings.reduce((a, b) => a.uvi >= b.uvi ? a : b);
+  }
+
+  /// The next upcoming hour (within 24h) where UV is expected to drop
+  /// below [UvScale.safeThreshold], i.e. safe without sun protection.
+  /// Returns null if it's already safe now, or stays unsafe all day.
+  UvReading? get nextSafeReading {
+    if (now.uvi < UvScale.safeThreshold) return null;
+    for (final r in upcomingHours) {
+      if (r.uvi < UvScale.safeThreshold) return r;
+    }
+    return null;
   }
 }

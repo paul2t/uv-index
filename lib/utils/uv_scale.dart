@@ -8,6 +8,9 @@ class UvScale {
 
   const UvScale._(this.label, this.color, this.advice);
 
+  /// Below this, it's considered safe to be outside without sun protection.
+  static const double safeThreshold = 2.5;
+
   /// Returns the scale category for a given UV index value.
   static UvScale forValue(double uvi) {
     if (uvi < 3) {

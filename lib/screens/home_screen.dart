@@ -105,6 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final scale = UvScale.forValue(data.now.uvi);
     final burnMins = UvScale.minutesToBurn(data.now.uvi);
     final peak = data.peakToday;
+    final safeReading = data.nextSafeReading;
+    final isSafeNow = data.now.uvi < UvScale.safeThreshold;
 
     return ListView(
       // AlwaysScrollable so pull-to-refresh works even when content is short.
@@ -140,6 +142,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.grey[700],
                           fontStyle: FontStyle.italic)),
                 ],
+                const SizedBox(height: 8),
+                Text(
+                  isSafeNow
+                      ? 'Safe to be outside without protection now.'
+                      : safeReading != null
+                          ? 'Safe without protection after '
+                              '${_formatHour(safeReading.time.hour)}.'
+                          : 'Stays above safe levels for the next 24 hours.',
+                  style: TextStyle(
+                      color: Colors.grey[700], fontStyle: FontStyle.italic),
+                ),
               ],
             ),
           ),
