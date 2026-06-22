@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/uv_data.dart';
 import '../utils/uv_scale.dart';
 
-/// A horizontally scrolling row of upcoming hourly UV readings.
+const double _chartHeight = 100;
+const double _barWidth = 20;
+
+/// A horizontally scrolling histogram of upcoming hourly UV readings.
 class ForecastRow extends StatelessWidget {
   final List<UvReading> readings;
 
@@ -13,6 +16,12 @@ class ForecastRow extends StatelessWidget {
     if (readings.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final maxUvi = readings.map((r) => r.uvi).reduce((a, b) => a > b ? a : b);
+    // Round up to the next even number, with a floor of 11 (the "Very High"
+    // ceiling) so the chart scale stays readable on typical days.
+    final chartMax = maxUvi < 11 ? 11.0 : (maxUvi / 2).ceil() * 2.0;
+    final now = DateTime.now();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,12 +34,34 @@ class ForecastRow extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 110,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: readings.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, i) => _HourTile(reading: readings[i]),
+          height: 20 + _chartHeight + 24,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 20,
+                left: 0,
+                right: 0,
+                height: _chartHeight,
+                child: _GridLines(chartMax: chartMax),
+              ),
+              ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: readings.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final reading = readings[i];
+                  final isNow = reading.time.year == now.year &&
+                      reading.time.month == now.month &&
+                      reading.time.day == now.day &&
+                      reading.time.hour == now.hour;
+                  return _HourBar(
+                    reading: reading,
+                    chartMax: chartMax,
+                    isNow: isNow,
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ],
@@ -38,9 +69,38 @@ class ForecastRow extends StatelessWidget {
   }
 }
 
-class _HourTile extends StatelessWidget {
+/// Faint reference lines at the WHO band thresholds, behind the bars.
+class _GridLines extends StatelessWidget {
+  final double chartMax;
+  const _GridLines({required this.chartMax});
+
+  static const _thresholds = [3.0, 6.0, 8.0, 11.0];
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: _thresholds.where((t) => t <= chartMax).map((t) {
+        return Positioned(
+          bottom: (t / chartMax) * _chartHeight,
+          left: 0,
+          right: 0,
+          child: Container(height: 1, color: Colors.grey.withValues(alpha: 0.15)),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _HourBar extends StatelessWidget {
   final UvReading reading;
-  const _HourTile({required this.reading});
+  final double chartMax;
+  final bool isNow;
+
+  const _HourBar({
+    required this.reading,
+    required this.chartMax,
+    required this.isNow,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -54,37 +114,48 @@ class _HourTile extends StatelessWidget {
                 ? '12p'
                 : '${hour - 12}p';
 
-    return Container(
-      width: 64,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        color: scale.color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scale.color.withValues(alpha: 0.3)),
-      ),
+    final barHeight =
+        ((reading.uvi / chartMax).clamp(0.0, 1.0) * _chartHeight)
+            .clamp(4.0, _chartHeight);
+
+    return SizedBox(
+      width: 36,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: scale.color,
-              shape: BoxShape.circle,
+          Text(
+            reading.uvi.toStringAsFixed(0),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
+              color: isNow ? scale.color : Colors.grey[700],
             ),
-            child: Text(
-              reading.uvi.toStringAsFixed(0),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: _chartHeight - 20,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: _barWidth,
+                height: barHeight,
+                decoration: BoxDecoration(
+                  color: scale.color.withValues(alpha: isNow ? 1.0 : 0.55),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(5)),
+                  border: isNow ? Border.all(color: scale.color, width: 1.5) : null,
+                ),
               ),
             ),
           ),
-          Text(scale.label,
-              style: const TextStyle(fontSize: 10),
-              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
+              color: isNow ? Colors.black87 : Colors.grey[600],
+            ),
+          ),
         ],
       ),
     );

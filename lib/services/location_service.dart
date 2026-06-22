@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 
 /// Result of a location request, including a human-readable error reason.
@@ -41,9 +43,12 @@ class LocationService {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.low, // coarse is plenty for UV
+          timeLimit: Duration(seconds: 15),
         ),
       );
       return LocationSuccess(position.latitude, position.longitude);
+    } on TimeoutException {
+      return LocationFailure('Timed out getting your location. Try again.');
     } catch (e) {
       return LocationFailure('Could not get location: $e');
     }
