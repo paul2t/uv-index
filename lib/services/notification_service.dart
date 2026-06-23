@@ -11,7 +11,6 @@ class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   static const _channelId = 'uv_alerts';
-  static const _channelName = 'UV alerts';
   static const _highNotificationId = 1;
   static const _safeNotificationId = 2;
 
@@ -20,6 +19,8 @@ class NotificationService {
   // available — check the device locale directly instead.
   static bool get _isFrench =>
       ui.PlatformDispatcher.instance.locale.languageCode == 'fr';
+
+  static String get _channelName => _isFrench ? 'Alertes UV' : 'UV alerts';
 
   static String get _highTitle =>
       _isFrench ? 'UV élevé' : 'UV is now High';
@@ -86,7 +87,7 @@ class NotificationService {
       id: id,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(_channelId, _channelName),
       ),
     );

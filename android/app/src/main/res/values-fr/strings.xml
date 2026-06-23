@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">UV Index</string>
-    <string name="widget_picker_label">UV Index (1x1)</string>
-    <string name="widget_label">UV Index</string>
+    <string name="app_name">Indice UV</string>
+    <string name="widget_picker_label">Indice UV (1x1)</string>
+    <string name="widget_label">Indice UV</string>
     <string name="uv_widget_small_description">Widget UV compact (1x1)</string>
 </resources>
