@@ -191,7 +191,13 @@ class _HourBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = UvScale.forValue(reading.uvi, AppLocalizations.of(context)!);
+    // Color is derived from the same rounded value shown in the label —
+    // not the raw reading — so two hours both displaying "8" never end up
+    // on opposite sides of a band boundary (e.g. 7.6 and 8.3 both round to
+    // "8" but fall in different WHO bands when read at full precision).
+    final displayedValue = reading.uvi.round();
+    final scale =
+        UvScale.forValue(displayedValue.toDouble(), AppLocalizations.of(context)!);
     final hour = reading.time.hour;
     final label = _shortHourLabel(context, hour);
 
@@ -209,7 +215,7 @@ class _HourBar extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              reading.uvi.toStringAsFixed(0),
+              '$displayedValue',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isNow ? FontWeight.bold : FontWeight.normal,
