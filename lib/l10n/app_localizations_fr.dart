@@ -39,7 +39,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get adviceHigh =>
-      'Protection indispensable. Chapeau, crème solaire, ombre de 11h à 16h.';
+      'Protection indispensable. Chapeau, crème solaire, ombre à la mi-journée.';
+
+  @override
+  String adviceHighWindow(String start, String end) {
+    return 'Protection indispensable. Chapeau, crème solaire, ombre de $start à $end.';
+  }
+
+  @override
+  String adviceHighUntil(String end) {
+    return 'Protection indispensable. Chapeau, crème solaire, ombre jusqu\'à $end.';
+  }
 
   @override
   String get adviceVeryHigh =>
@@ -78,7 +88,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get next24Hours => 'Prochaines 24 heures';
+  String get next24Hours => 'Historique et prévisions';
 
   @override
   String updatedAt(String time) {

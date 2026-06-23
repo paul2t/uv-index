@@ -15,15 +15,30 @@ class UvScale {
   /// At and above this, the WHO "High" band begins — protection essential.
   static const double highThreshold = 6;
 
-  /// Returns the scale category for a given UV index value.
-  static UvScale forValue(double uvi, AppLocalizations l10n) {
+  /// Returns the scale category for a given UV index value. [protectionStart]
+  /// and [protectionEnd] are pre-formatted, locale-aware time strings for
+  /// today's protection window (see [UvData.todaysProtectionWindow]) — when
+  /// given, the "High" advice names the actual predicted window instead of a
+  /// generic time of day. [protectionStart] may be null (the window's start
+  /// isn't reliably known from available data) while [protectionEnd] is
+  /// given, in which case the advice only mentions the end.
+  static UvScale forValue(double uvi, AppLocalizations l10n,
+      {String? protectionStart, String? protectionEnd}) {
     if (uvi < 3) {
       return UvScale._(l10n.uvLow, colorForValue(uvi), l10n.adviceLow);
     } else if (uvi < 6) {
       return UvScale._(
           l10n.uvModerate, colorForValue(uvi), l10n.adviceModerate);
     } else if (uvi < 8) {
-      return UvScale._(l10n.uvHigh, colorForValue(uvi), l10n.adviceHigh);
+      final String advice;
+      if (protectionStart != null && protectionEnd != null) {
+        advice = l10n.adviceHighWindow(protectionStart, protectionEnd);
+      } else if (protectionEnd != null) {
+        advice = l10n.adviceHighUntil(protectionEnd);
+      } else {
+        advice = l10n.adviceHigh;
+      }
+      return UvScale._(l10n.uvHigh, colorForValue(uvi), advice);
     } else if (uvi < 11) {
       return UvScale._(
           l10n.uvVeryHigh, colorForValue(uvi), l10n.adviceVeryHigh);
@@ -43,12 +58,16 @@ class UvScale {
   }
 
   /// Rough "minutes to burn" estimate for an unprotected user. [skinFactor]
-  /// comes from [SkinType.burnFactor] — higher values burn slower. This is a
-  /// simplified heuristic for display only, not medical advice.
+  /// comes from [SkinType.burnFactor] — higher values burn slower, so this
+  /// scales the baseline time *up* for higher factors (not down). Calibrated
+  /// against the app's default skin factor (3.0, Type III) so that default
+  /// case matches the original heuristic exactly. Simplified heuristic for
+  /// display only, not medical advice.
   static int? minutesToBurn(double uvi, {double skinFactor = 3.0}) {
     if (uvi < 1) return null;
-    // Common approximation: ~ 200 / (UVI * skin_factor).
-    final minutes = (200 / (uvi * skinFactor)).round();
+    const defaultFactor = 3.0;
+    final baselineMinutes = 200 / (uvi * defaultFactor);
+    final minutes = (baselineMinutes * skinFactor / defaultFactor).round();
     return minutes.clamp(5, 240);
   }
 }

@@ -35,11 +35,36 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isStale = false; // true when showing cached data after a failure
   bool _refreshing = false; // a fetch is in flight while data is already shown
   SkinType _skinType = SkinType.iii;
+  Timer? _uiTickTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _uiTickTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Refreshes the displayed UV value, advice, and safe/unsafe predictions
+  /// by re-running the linear interpolation against the current time — no
+  /// network involved. Scheduled for exactly the next moment the
+  /// interpolated value would change, then reschedules itself from there.
+  void _scheduleUiTick() {
+    _uiTickTimer?.cancel();
+    final data = _data;
+    if (data == null) return;
+    final next = data.nextChangeTime(DateTime.now());
+    if (next == null) return;
+    final delay = next.difference(DateTime.now());
+    _uiTickTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (!mounted) return;
+      setState(() {});
+      _scheduleUiTick();
+    });
   }
 
   Future<void> _load() async {
@@ -83,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _status = _Status.ready;
         _refreshing = false;
       });
+      _scheduleUiTick();
     } catch (e) {
       if (!mounted) return;
       await _fallbackToCache(AppLocalizations.of(context)!.networkError);
@@ -123,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isStale = true;
         _status = _Status.ready;
       });
+      _scheduleUiTick();
     } else {
       setState(() {
         _errorMessage = reason;
@@ -175,7 +202,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final data = _data!;
     final currentUvi = data.interpolatedNow;
-    final scale = UvScale.forValue(currentUvi, l10n);
+    final window = data.todaysProtectionWindow;
+    final scale = UvScale.forValue(currentUvi, l10n,
+        protectionStart:
+            window.start != null ? _formatTime(context, window.start!) : null,
+        protectionEnd: _formatTime(context, window.end));
     final burnMins =
         UvScale.minutesToBurn(currentUvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;
@@ -238,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
         const SizedBox(height: 24),
-        ForecastRow(readings: data.upcomingHours),
+        ForecastRow(readings: data.chartReadings),
         const SizedBox(height: 20),
         if (_fetchedAt != null)
           Center(

@@ -12,7 +12,9 @@
 
   "adviceLow": "Aucune protection nécessaire. Vous pouvez sortir sans risque.",
   "adviceModerate": "Portez de la crème solaire et recherchez l'ombre à la mi-journée.",
-  "adviceHigh": "Protection indispensable. Chapeau, crème solaire, ombre de 11h à 16h.",
+  "adviceHigh": "Protection indispensable. Chapeau, crème solaire, ombre à la mi-journée.",
+  "adviceHighWindow": "Protection indispensable. Chapeau, crème solaire, ombre de {start} à {end}.",
+  "adviceHighUntil": "Protection indispensable. Chapeau, crème solaire, ombre jusqu'à {end}.",
   "adviceVeryHigh": "Protection renforcée. Évitez le soleil à la mi-journée. Renouvelez la crème solaire.",
   "adviceExtreme": "Prenez toutes les précautions. Évitez de sortir à la mi-journée.",
 
@@ -25,7 +27,7 @@
 
   "todaysPeak": "Pic du jour : {value} vers {time}",
 
-  "next24Hours": "Prochaines 24 heures",
+  "next24Hours": "Historique et prévisions",
 
   "updatedAt": "Mis à jour à {time}",
   "offlineUpdatedAt": "Hors ligne — dernière mise à jour à {time}",

@@ -111,10 +111,22 @@ class UvData {
   }
 
   /// Past readings, the current reading, and forecast readings, sorted by
-  /// time. The shared timeline used for interpolation.
+  /// time. The shared timeline used for interpolation. Deduplicated by
+  /// timestamp — history and forecast can both include the same hour (e.g.
+  /// a previous fetch's `now` carried into history, re-reported by a fresh
+  /// fetch's `forecast`) — preferring the freshest source (forecast over
+  /// `now` over history) so the chart doesn't show the same hour twice.
   List<UvReading> get _timeline {
-    final points = [...history, now, ...forecast];
-    points.sort((a, b) => a.time.compareTo(b.time));
+    final byTime = <int, UvReading>{};
+    for (final r in history) {
+      byTime[r.time.millisecondsSinceEpoch] = r;
+    }
+    byTime[now.time.millisecondsSinceEpoch] = now;
+    for (final r in forecast) {
+      byTime[r.time.millisecondsSinceEpoch] = r;
+    }
+    final points = byTime.values.toList()
+      ..sort((a, b) => a.time.compareTo(b.time));
     return points;
   }
 
@@ -191,6 +203,47 @@ class UvData {
         r.time.day == today.day);
     if (todayReadings.isEmpty) return null;
     return todayReadings.reduce((a, b) => a.uvi >= b.uvi ? a : b);
+  }
+
+  /// History and forecast readings for the histogram: from 12 hours ago
+  /// through 24 hours ahead.
+  List<UvReading> get chartReadings {
+    final from = DateTime.now().subtract(const Duration(hours: 12));
+    final to = DateTime.now().add(const Duration(hours: 24));
+    return _timeline.where((r) => r.time.isAfter(from) && r.time.isBefore(to)).toList();
+  }
+
+  /// Today's predicted protection window — the interpolated, minute-
+  /// precision start and end of the period during which UV is at or above
+  /// [UvScale.safeThreshold]. [end] is always present (falling back to
+  /// midnight tonight if UV is predicted to stay above the threshold for
+  /// the rest of the day). [start] is null when it can't actually be
+  /// grounded in known data — e.g. a 12-hour history window doesn't reach
+  /// far enough back to cover this morning's rise, or there's no history
+  /// at all yet (a fresh install) — rather than guessing midnight or
+  /// "now" from a flat extrapolation.
+  ({DateTime? start, DateTime end}) get todaysProtectionWindow {
+    final threshold = UvScale.safeThreshold;
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final timeline = _timeline;
+    final earliestKnown = timeline.isEmpty ? null : timeline.first.time;
+
+    DateTime? start;
+    if (earliestKnown != null &&
+        !earliestKnown.isAfter(dayStart) &&
+        interpolatedUvi(dayStart) >= threshold) {
+      // Data genuinely reaches back to midnight and it was already unsafe.
+      start = dayStart;
+    } else {
+      // A genuine rising crossing found within the known timeline.
+      start = _nextThresholdCrossing(dayStart, threshold, risingThrough: true);
+    }
+
+    final end = _nextThresholdCrossing(start ?? now, threshold, risingThrough: false) ??
+        dayEnd;
+    return (start: start, end: end.isBefore(dayEnd) ? end : dayEnd);
   }
 
   /// The current UV index interpolated for this instant, rather than the

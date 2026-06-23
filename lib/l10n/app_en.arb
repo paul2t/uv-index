@@ -12,7 +12,18 @@
 
   "adviceLow": "No protection needed. Safe to be outside.",
   "adviceModerate": "Wear sunscreen and seek shade around midday.",
-  "adviceHigh": "Protection essential. Hat, sunscreen, shade 11am–4pm.",
+  "adviceHigh": "Protection essential. Hat, sunscreen, shade around midday.",
+  "adviceHighWindow": "Protection essential. Hat, sunscreen, shade {start}–{end}.",
+  "@adviceHighWindow": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "adviceHighUntil": "Protection essential. Hat, sunscreen, shade until {end}.",
+  "@adviceHighUntil": {
+    "placeholders": { "end": { "type": "String" } }
+  },
   "adviceVeryHigh": "Extra protection. Avoid sun midday. Reapply sunscreen.",
   "adviceExtreme": "Take all precautions. Avoid being outside midday.",
 
@@ -40,7 +51,7 @@
     }
   },
 
-  "next24Hours": "Next 24 hours",
+  "next24Hours": "History & forecast",
 
   "updatedAt": "Updated {time}",
   "@updatedAt": {

@@ -155,8 +155,20 @@ abstract class AppLocalizations {
   /// No description provided for @adviceHigh.
   ///
   /// In en, this message translates to:
-  /// **'Protection essential. Hat, sunscreen, shade 11am–4pm.'**
+  /// **'Protection essential. Hat, sunscreen, shade around midday.'**
   String get adviceHigh;
+
+  /// No description provided for @adviceHighWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Protection essential. Hat, sunscreen, shade {start}–{end}.'**
+  String adviceHighWindow(String start, String end);
+
+  /// No description provided for @adviceHighUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Protection essential. Hat, sunscreen, shade until {end}.'**
+  String adviceHighUntil(String end);
 
   /// No description provided for @adviceVeryHigh.
   ///
@@ -209,7 +221,7 @@ abstract class AppLocalizations {
   /// No description provided for @next24Hours.
   ///
   /// In en, this message translates to:
-  /// **'Next 24 hours'**
+  /// **'History & forecast'**
   String get next24Hours;
 
   /// No description provided for @updatedAt.
