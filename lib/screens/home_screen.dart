@@ -94,7 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (locationResult is LocationFailure) {
       if (!mounted) return;
-      await _fallbackToCache(_locationErrorMessage(locationResult));
+      final reason = _locationErrorMessage(locationResult);
+      _showFetchError(reason);
+      await _fallbackToCache(reason);
       if (mounted) setState(() => _refreshing = false);
       return;
     }
@@ -116,9 +118,25 @@ class _HomeScreenState extends State<HomeScreen> {
       _scheduleUiTick();
     } catch (e) {
       if (!mounted) return;
+      _showFetchError('${AppLocalizations.of(context)!.networkError}\n$e');
       await _fallbackToCache(AppLocalizations.of(context)!.networkError);
       if (mounted) setState(() => _refreshing = false);
     }
+  }
+
+  /// Surfaces the exact failure reason in a SnackBar so it's visible
+  /// without attaching a debugger — useful in release builds, where the
+  /// existing inline "offline" banner intentionally only shows a generic,
+  /// localized message.
+  void _showFetchError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 8),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   String _locationErrorMessage(LocationFailure failure) {
