@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 import '../models/uv_data.dart';
+import '../services/background_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import '../services/settings_service.dart';
@@ -54,6 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _skinType = await SettingsService.getSkinType();
 
+    // Nudge the widget from cached history/forecast data right away —
+    // cheap and network-free — before attempting the real API fetch below.
+    final interpolated = await _uvService.interpolateFromCache();
+    if (interpolated != null) unawaited(WidgetService.update(interpolated));
+
     final locationResult = await _locationService.getCurrentLocation();
 
     if (locationResult is LocationFailure) {
@@ -66,8 +72,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final loc = locationResult as LocationSuccess;
     try {
       final data = await _uvService.fetch(loc.latitude, loc.longitude);
-      unawaited(WidgetService.update(data));
+      unawaited(WidgetService.update(data.now.uvi));
       unawaited(NotificationService.checkAndNotify(data));
+      unawaited(BackgroundService.scheduleNextTick(data));
       if (!mounted) return;
       setState(() {
         _data = data;
@@ -167,13 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildContent() {
     final l10n = AppLocalizations.of(context)!;
     final data = _data!;
-    final scale = UvScale.forValue(data.now.uvi, l10n);
+    final currentUvi = data.interpolatedNow;
+    final scale = UvScale.forValue(currentUvi, l10n);
     final burnMins =
-        UvScale.minutesToBurn(data.now.uvi, skinFactor: _skinType.burnFactor);
+        UvScale.minutesToBurn(currentUvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;
-    final safeReading = data.nextSafeReading;
-    final unsafeReading = data.nextUnsafeReading;
-    final isSafeNow = data.now.uvi < UvScale.safeThreshold;
+    final nextSafeTime = data.nextSafeTime;
+    final nextUnsafeTime = data.nextUnsafeTime;
+    final isSafeNow = currentUvi < UvScale.safeThreshold;
 
     return ListView(
       // AlwaysScrollable so pull-to-refresh works even when content is short.
@@ -185,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
-        Center(child: UvDial(uvi: data.now.uvi)),
+        Center(child: UvDial(uvi: currentUvi)),
         const SizedBox(height: 24),
         Card(
           color: scale.color.withValues(alpha: 0.1),
@@ -206,13 +214,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Text(
                   isSafeNow
-                      ? unsafeReading != null
+                      ? nextUnsafeTime != null
                           ? l10n.safeNowWithNext(
-                              _formatHour(context, unsafeReading.time.hour))
+                              _formatTime(context, nextUnsafeTime))
                           : l10n.safeNowAllDay
-                      : safeReading != null
+                      : nextSafeTime != null
                           ? l10n.safeAfter(
-                              _formatHour(context, safeReading.time.hour))
+                              _formatTime(context, nextSafeTime))
                           : l10n.staysUnsafeAllDay,
                   style: TextStyle(
                       color: Colors.grey[700], fontStyle: FontStyle.italic),

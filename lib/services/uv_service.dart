@@ -24,15 +24,27 @@ class UvService {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = UvData.fromJson(json);
+    final fetched = UvData.fromJson(json);
 
-    await _cache(response.body);
+    final cached = await loadCached();
+    final data = fetched.mergedWithPrevious(cached?.data);
+
+    await _cache(data);
     return data;
   }
 
-  Future<void> _cache(String rawJson) async {
+  /// Estimates the current UV index from cached history/forecast data
+  /// alone, without hitting the network. Useful for refreshing the widget
+  /// between scheduled API fetches. Returns null if nothing is cached.
+  Future<double?> interpolateFromCache([DateTime? at]) async {
+    final cached = await loadCached();
+    if (cached == null) return null;
+    return cached.data.interpolatedUvi(at ?? DateTime.now());
+  }
+
+  Future<void> _cache(UvData data) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cacheKey, rawJson);
+    await prefs.setString(_cacheKey, jsonEncode(data.toJson()));
     await prefs.setInt(
         _cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
   }
