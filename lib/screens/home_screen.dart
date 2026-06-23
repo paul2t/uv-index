@@ -52,15 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Refreshes the displayed UV value, advice, and safe/unsafe predictions
   /// by re-running the linear interpolation against the current time — no
   /// network involved. Scheduled for exactly the next moment the
-  /// interpolated value would change, then reschedules itself from there.
+  /// interpolated value would change by [_uiTickStep] (matching UvDial's
+  /// one-decimal display — finer than the widget's rounded-integer ticks),
+  /// then reschedules itself from there.
+  static const _uiTickStep = 0.1;
+  static const _minUiTickDelay = Duration(seconds: 5);
+
   void _scheduleUiTick() {
     _uiTickTimer?.cancel();
     final data = _data;
     if (data == null) return;
-    final next = data.nextChangeTime(DateTime.now());
+    final next = data.nextChangeTime(DateTime.now(), step: _uiTickStep);
     if (next == null) return;
     final delay = next.difference(DateTime.now());
-    _uiTickTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+    _uiTickTimer = Timer(delay < _minUiTickDelay ? _minUiTickDelay : delay, () {
       if (!mounted) return;
       setState(() {});
       _scheduleUiTick();

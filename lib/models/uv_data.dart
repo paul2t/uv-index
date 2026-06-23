@@ -153,15 +153,18 @@ class UvData {
     return before.uvi + (after.uvi - before.uvi) * t;
   }
 
-  /// Predicts the next moment after [from] at which the rounded UV index
-  /// (i.e. the integer shown on the widget) would change, by walking
-  /// forward through the piecewise-linear history/forecast timeline.
+  /// Predicts the next moment after [from] at which the UV index, rounded
+  /// to the nearest [step], would change — by walking forward through the
+  /// piecewise-linear history/forecast timeline. [step] defaults to 1.0,
+  /// matching the rounded integer shown on the widget; the main UI's
+  /// one-decimal display should pass 0.1 so it refreshes whenever that
+  /// digit would actually change, rather than only on whole-number jumps.
   /// Returns null if the available data doesn't show a future crossing
   /// (e.g. the forecast window has been exhausted).
-  DateTime? nextChangeTime(DateTime from) {
-    final currentRounded = interpolatedUvi(from).round();
-    final upperBound = currentRounded + 0.5;
-    final lowerBound = currentRounded - 0.5;
+  DateTime? nextChangeTime(DateTime from, {double step = 1.0}) {
+    final currentRounded = (interpolatedUvi(from) / step).round() * step;
+    final upperBound = currentRounded + step / 2;
+    final lowerBound = currentRounded - step / 2;
     final points = _timeline;
 
     for (var i = 0; i < points.length - 1; i++) {
