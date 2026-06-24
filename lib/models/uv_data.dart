@@ -189,6 +189,41 @@ class UvData {
     return null;
   }
 
+  /// The mirror image of [nextChangeTime]: the most recent moment before
+  /// [from] at which the UV index, rounded to [step], last changed to
+  /// become whatever it currently is — found the same way, by walking the
+  /// timeline, just backward and looking for the crossing that entered the
+  /// current rounding bucket rather than the one that will leave it.
+  /// Returns null if the available history doesn't reach back far enough
+  /// to show a past crossing.
+  DateTime? lastChangeTime(DateTime from, {double step = 1.0}) {
+    final currentRounded = (interpolatedUvi(from) / step).round() * step;
+    final upperBound = currentRounded + step / 2;
+    final lowerBound = currentRounded - step / 2;
+    final points = _timeline;
+
+    for (var i = points.length - 2; i >= 0; i--) {
+      final a = points[i];
+      final b = points[i + 1];
+      if (!a.time.isBefore(from)) continue;
+
+      final spanMs = b.time.difference(a.time).inMilliseconds;
+      if (spanMs == 0 || a.uvi == b.uvi) continue;
+
+      double? frac;
+      if (b.uvi > a.uvi && a.uvi < lowerBound && b.uvi >= lowerBound) {
+        frac = (lowerBound - a.uvi) / (b.uvi - a.uvi);
+      } else if (b.uvi < a.uvi && a.uvi >= upperBound && b.uvi < upperBound) {
+        frac = (upperBound - a.uvi) / (b.uvi - a.uvi);
+      }
+      if (frac == null) continue;
+
+      final crossing = a.time.add(Duration(milliseconds: (spanMs * frac).round()));
+      if (crossing.isBefore(from)) return crossing;
+    }
+    return null;
+  }
+
   /// Forecast entries for the rest of today and tomorrow, hourly.
   List<UvReading> get upcomingHours {
     final cutoff = DateTime.now().add(const Duration(hours: 24));
@@ -197,13 +232,16 @@ class UvData {
         .toList();
   }
 
-  /// Peak UV in the upcoming forecast window.
+  /// Peak UV today — across history, now, and forecast, not just forecast,
+  /// so a peak that already happened earlier today (and has since rolled
+  /// into history) still shows correctly instead of being missed once the
+  /// forecast window for today shrinks to whatever's left of the day.
   UvReading? get peakToday {
-    final today = DateTime.now();
-    final todayReadings = forecast.where((r) =>
-        r.time.year == today.year &&
-        r.time.month == today.month &&
-        r.time.day == today.day);
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final todayReadings = _timeline
+        .where((r) => !r.time.isBefore(dayStart) && r.time.isBefore(dayEnd));
     if (todayReadings.isEmpty) return null;
     return todayReadings.reduce((a, b) => a.uvi >= b.uvi ? a : b);
   }

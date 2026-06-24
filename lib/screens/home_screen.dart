@@ -13,6 +13,7 @@ import '../services/widget_service.dart';
 import '../utils/uv_scale.dart';
 import '../widgets/uv_dial.dart';
 import '../widgets/forecast_row.dart';
+import 'debug_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class HomeScreen extends StatefulWidget {
 
 enum _Status { loading, ready, error }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> {
   final _uvService = UvService();
   final _locationService = LocationService();
 
@@ -37,32 +38,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   SkinType _skinType = SkinType.iii;
   Timer? _uiTickTimer;
 
-  // Debug-only: surfaced in the UI to verify the widget update scheduling.
-  DateTime? _debugNextForegroundTick; // when the in-app timer above will fire
-  DateTime? _debugNextBackgroundTick; // from BackgroundService, persisted
-  DateTime? _debugLastWidgetUpdate; // from WidgetService, persisted
+  // When the in-app foreground tick timer below is next due to fire — only
+  // known here (not recomputable from [UvData] alone, since it reflects
+  // when the timer was actually scheduled). Passed to [DebugScreen].
+  DateTime? _debugNextForegroundTick;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _uiTickTimer?.cancel();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Pick up anything the background tick chain did while the app was
-    // away — otherwise the debug panel only reflects this isolate's view.
-    if (state == AppLifecycleState.resumed) {
-      unawaited(_refreshDebugInfo());
-    }
   }
 
   /// Refreshes the displayed UV value, advice, and safe/unsafe predictions
@@ -93,24 +83,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // can lag behind while the app sits open and visibly ticking.
       final current = _data;
       if (current != null) {
-        unawaited(
-            WidgetService.update(current.interpolatedNow).then((_) => _refreshDebugInfo()));
+        unawaited(WidgetService.update(current.interpolatedNow));
       }
       _scheduleUiTick();
-    });
-  }
-
-  /// Re-reads the persisted debug timestamps (last widget push, next
-  /// background tick) so the debug panel reflects updates made by other
-  /// isolates (the background tick chain) or by [WidgetService] calls this
-  /// method doesn't directly follow.
-  Future<void> _refreshDebugInfo() async {
-    final lastUpdate = await WidgetService.lastUpdateTime();
-    final nextBackgroundTick = await BackgroundService.nextBackgroundTickTime();
-    if (!mounted) return;
-    setState(() {
-      _debugLastWidgetUpdate = lastUpdate;
-      _debugNextBackgroundTick = nextBackgroundTick;
     });
   }
 
@@ -143,10 +118,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // cheap and network-free — before attempting the real API fetch below.
     final cached = await _uvService.loadCached();
     if (cached != null) {
-      unawaited(WidgetService.update(cached.data.interpolatedUvi(DateTime.now()))
-          .then((_) => _refreshDebugInfo()));
-    } else {
-      unawaited(_refreshDebugInfo());
+      unawaited(WidgetService.update(cached.data.interpolatedUvi(DateTime.now())));
     }
 
     var locationResult =
@@ -216,9 +188,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Interpolated, not data.now.uvi directly — the API's `now` is anchored
     // to a fixed past hour, so pushing it as-is would overwrite whatever
     // the tick chain already correctly advanced the widget to.
-    final widgetUpdate = WidgetService.update(data.interpolatedNow);
+    unawaited(WidgetService.update(data.interpolatedNow));
     unawaited(NotificationService.checkAndNotify(data));
-    final tickSchedule = BackgroundService.scheduleNextTick(data);
+    unawaited(BackgroundService.scheduleNextTick(data));
     if (!mounted) return;
     setState(() {
       _data = data;
@@ -228,7 +200,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _refreshing = false;
     });
     _scheduleUiTick();
-    unawaited(Future.wait([widgetUpdate, tickSchedule]).then((_) => _refreshDebugInfo()));
   }
 
   /// Surfaces the exact failure reason in a SnackBar so it's visible
@@ -269,6 +240,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _load();
   }
 
+  Future<void> _openDebug() async {
+    final data = _data;
+    if (data == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            DebugScreen(data: data, nextForegroundTick: _debugNextForegroundTick),
+      ),
+    );
+  }
+
   Future<void> _fallbackToCache(String reason) async {
     final cached = await _uvService.loadCached();
     if (!mounted) return;
@@ -280,7 +262,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _status = _Status.ready;
       });
       _scheduleUiTick();
-      unawaited(_refreshDebugInfo());
     } else {
       setState(() {
         _errorMessage = reason;
@@ -295,6 +276,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.appTitle),
         actions: [
+          if (_data != null)
+            IconButton(
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: _openDebug,
+            ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: _openSettings,
@@ -429,55 +415,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Text(l10n.dataAttribution,
               style: TextStyle(fontSize: 11, color: Colors.grey[400])),
         ),
-        const SizedBox(height: 16),
-        _buildDebugPanel(data),
       ],
     );
-  }
-
-  /// Debug-only panel showing widget update scheduling: when the widget's
-  /// displayed value is next expected to change, when the next push to the
-  /// widget (foreground or background tick, whichever comes first) is
-  /// scheduled for, and when it was last actually updated.
-  Widget _buildDebugPanel(UvData data) {
-    final nextValueChange = data.nextChangeTime(DateTime.now());
-    final nextPushCandidates = [_debugNextForegroundTick, _debugNextBackgroundTick]
-        .whereType<DateTime>()
-        .toList()
-      ..sort();
-    final nextPush = nextPushCandidates.isEmpty ? null : nextPushCandidates.first;
-
-    const labelStyle = TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace');
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('DEBUG',
-              style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey[500])),
-          const SizedBox(height: 4),
-          Text('Widget value expected to change: ${_formatDebugTime(nextValueChange)}',
-              style: labelStyle),
-          Text('Next widget push: ${_formatDebugTime(nextPush)}', style: labelStyle),
-          Text('Last widget update: ${_formatDebugTime(_debugLastWidgetUpdate)}',
-              style: labelStyle),
-        ],
-      ),
-    );
-  }
-
-  /// HH:mm:ss, always 24h — debug-only, deliberately not locale-formatted.
-  String _formatDebugTime(DateTime? t) {
-    if (t == null) return '—';
-    final h = t.hour.toString().padLeft(2, '0');
-    final m = t.minute.toString().padLeft(2, '0');
-    final s = t.second.toString().padLeft(2, '0');
-    return '$h:$m:$s';
   }
 
   /// Locale-aware hour formatting: 24h digits for French, 12h am/pm short
