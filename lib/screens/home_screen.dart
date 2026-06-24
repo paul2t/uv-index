@@ -68,6 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _uiTickTimer = Timer(delay < _minUiTickDelay ? _minUiTickDelay : delay, () {
       if (!mounted) return;
       setState(() {});
+      // Keep the home-screen widget in sync too — otherwise it only
+      // refreshes via the separate, coarser background tick chain, which
+      // can lag behind while the app sits open and visibly ticking.
+      final current = _data;
+      if (current != null) {
+        unawaited(WidgetService.update(current.interpolatedNow));
+      }
       _scheduleUiTick();
     });
   }
