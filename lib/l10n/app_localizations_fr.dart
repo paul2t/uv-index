@@ -38,6 +38,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Portez de la crème solaire et recherchez l\'ombre à la mi-journée.';
 
   @override
+  String adviceModerateWindow(String start, String end) {
+    return 'Portez de la crème solaire et recherchez l\'ombre de $start à $end.';
+  }
+
+  @override
+  String adviceModerateUntil(String end) {
+    return 'Portez de la crème solaire et recherchez l\'ombre jusqu\'à $end.';
+  }
+
+  @override
   String get adviceHigh =>
       'Protection indispensable. Chapeau, crème solaire, ombre à la mi-journée.';
 
@@ -56,8 +66,28 @@ class AppLocalizationsFr extends AppLocalizations {
       'Protection renforcée. Évitez le soleil à la mi-journée. Renouvelez la crème solaire.';
 
   @override
+  String adviceVeryHighWindow(String start, String end) {
+    return 'Protection renforcée. Évitez le soleil de $start à $end. Renouvelez la crème solaire.';
+  }
+
+  @override
+  String adviceVeryHighUntil(String end) {
+    return 'Protection renforcée. Évitez le soleil jusqu\'à $end. Renouvelez la crème solaire.';
+  }
+
+  @override
   String get adviceExtreme =>
       'Prenez toutes les précautions. Évitez de sortir à la mi-journée.';
+
+  @override
+  String adviceExtremeWindow(String start, String end) {
+    return 'Prenez toutes les précautions. Évitez de sortir de $start à $end.';
+  }
+
+  @override
+  String adviceExtremeUntil(String end) {
+    return 'Prenez toutes les précautions. Évitez de sortir jusqu\'à $end.';
+  }
 
   @override
   String minutesToBurn(int minutes) {

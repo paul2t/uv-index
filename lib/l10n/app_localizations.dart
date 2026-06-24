@@ -152,6 +152,18 @@ abstract class AppLocalizations {
   /// **'Wear sunscreen and seek shade around midday.'**
   String get adviceModerate;
 
+  /// No description provided for @adviceModerateWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Wear sunscreen and seek shade {start}–{end}.'**
+  String adviceModerateWindow(String start, String end);
+
+  /// No description provided for @adviceModerateUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Wear sunscreen and seek shade until {end}.'**
+  String adviceModerateUntil(String end);
+
   /// No description provided for @adviceHigh.
   ///
   /// In en, this message translates to:
@@ -176,11 +188,35 @@ abstract class AppLocalizations {
   /// **'Extra protection. Avoid sun midday. Reapply sunscreen.'**
   String get adviceVeryHigh;
 
+  /// No description provided for @adviceVeryHighWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra protection. Avoid sun {start}–{end}. Reapply sunscreen.'**
+  String adviceVeryHighWindow(String start, String end);
+
+  /// No description provided for @adviceVeryHighUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra protection. Avoid sun until {end}. Reapply sunscreen.'**
+  String adviceVeryHighUntil(String end);
+
   /// No description provided for @adviceExtreme.
   ///
   /// In en, this message translates to:
   /// **'Take all precautions. Avoid being outside midday.'**
   String get adviceExtreme;
+
+  /// No description provided for @adviceExtremeWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Take all precautions. Avoid being outside {start}–{end}.'**
+  String adviceExtremeWindow(String start, String end);
+
+  /// No description provided for @adviceExtremeUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Take all precautions. Avoid being outside until {end}.'**
+  String adviceExtremeUntil(String end);
 
   /// No description provided for @minutesToBurn.
   ///

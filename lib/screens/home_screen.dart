@@ -333,17 +333,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final l10n = AppLocalizations.of(context)!;
     final data = _data!;
     final currentUvi = data.interpolatedNow;
-    // Window uses the High band's own threshold, not the broader "any
-    // protection needed" threshold, so the range shown actually matches the
-    // High-UV value the card is describing.
-    final window = data.todaysProtectionWindow(threshold: UvScale.highThreshold);
+    final roundedUvi = currentUvi.roundToDouble();
+    // Window uses the current band's own rounding floor, not a single fixed
+    // threshold, so every band's advice shows the time *that band's* message
+    // stops applying — not just the High band's. Null for "Low", which has
+    // no protection deadline to report.
+    final protectionThreshold = UvScale.protectionThresholdFor(roundedUvi);
+    final window = protectionThreshold == null
+        ? null
+        : data.todaysProtectionWindow(threshold: protectionThreshold);
     // Color, label, and advice come from the rounded value — matching the
     // dial and the widget — so the card's tint never disagrees with the
     // number shown just above it.
-    final scale = UvScale.forValue(currentUvi.roundToDouble(), l10n,
+    final scale = UvScale.forValue(roundedUvi, l10n,
         protectionStart:
-            window.start != null ? _formatTime(context, window.start!) : null,
-        protectionEnd: _formatTime(context, window.end));
+            window?.start != null ? _formatTime(context, window!.start!) : null,
+        protectionEnd: window != null ? _formatTime(context, window.end) : null);
     final burnMins =
         UvScale.minutesToBurn(currentUvi, skinFactor: _skinType.burnFactor);
     final peak = data.peakToday;

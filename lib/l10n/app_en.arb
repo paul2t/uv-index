@@ -12,6 +12,17 @@
 
   "adviceLow": "No protection needed. Safe to be outside.",
   "adviceModerate": "Wear sunscreen and seek shade around midday.",
+  "adviceModerateWindow": "Wear sunscreen and seek shade {start}–{end}.",
+  "@adviceModerateWindow": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "adviceModerateUntil": "Wear sunscreen and seek shade until {end}.",
+  "@adviceModerateUntil": {
+    "placeholders": { "end": { "type": "String" } }
+  },
   "adviceHigh": "Protection essential. Hat, sunscreen, shade around midday.",
   "adviceHighWindow": "Protection essential. Hat, sunscreen, shade {start}–{end}.",
   "@adviceHighWindow": {
@@ -25,7 +36,29 @@
     "placeholders": { "end": { "type": "String" } }
   },
   "adviceVeryHigh": "Extra protection. Avoid sun midday. Reapply sunscreen.",
+  "adviceVeryHighWindow": "Extra protection. Avoid sun {start}–{end}. Reapply sunscreen.",
+  "@adviceVeryHighWindow": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "adviceVeryHighUntil": "Extra protection. Avoid sun until {end}. Reapply sunscreen.",
+  "@adviceVeryHighUntil": {
+    "placeholders": { "end": { "type": "String" } }
+  },
   "adviceExtreme": "Take all precautions. Avoid being outside midday.",
+  "adviceExtremeWindow": "Take all precautions. Avoid being outside {start}–{end}.",
+  "@adviceExtremeWindow": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "adviceExtremeUntil": "Take all precautions. Avoid being outside until {end}.",
+  "@adviceExtremeUntil": {
+    "placeholders": { "end": { "type": "String" } }
+  },
 
   "minutesToBurn": "~{minutes} min to burn (unprotected)",
   "@minutesToBurn": {

@@ -12,39 +12,100 @@ class UvScale {
   /// Below this, it's considered safe to be outside without sun protection.
   static const double safeThreshold = 2.5;
 
+  /// At and above this, the WHO "Moderate" band begins.
+  static const double moderateThreshold = 3;
+
   /// At and above this, the WHO "High" band begins — protection essential.
   static const double highThreshold = 6;
 
+  /// At and above this, the WHO "Very High" band begins.
+  static const double veryHighThreshold = 8;
+
+  /// At and above this, the WHO "Extreme" band begins.
+  static const double extremeThreshold = 11;
+
+  /// The raw value below which an already-rounded [roundedValue] would round
+  /// down into the next lower band — i.e. the threshold to pass to
+  /// [UvData.todaysProtectionWindow] so its `end` reports exactly when the
+  /// band currently being described stops applying. Null for the "Low" band,
+  /// which has no protection deadline to report.
+  static double? protectionThresholdFor(double roundedValue) {
+    if (roundedValue >= extremeThreshold) return extremeThreshold - 0.5;
+    if (roundedValue >= veryHighThreshold) return veryHighThreshold - 0.5;
+    if (roundedValue >= highThreshold) return highThreshold - 0.5;
+    if (roundedValue >= moderateThreshold) return moderateThreshold - 0.5;
+    return null;
+  }
+
   /// Returns the scale category for a given UV index value. [protectionStart]
   /// and [protectionEnd] are pre-formatted, locale-aware time strings for
-  /// today's protection window (see [UvData.todaysProtectionWindow]) — when
-  /// given, the "High" advice names the actual predicted window instead of a
-  /// generic time of day. [protectionStart] may be null (the window's start
-  /// isn't reliably known from available data) while [protectionEnd] is
-  /// given, in which case the advice only mentions the end.
+  /// the window during which the current band applies (see
+  /// [UvData.todaysProtectionWindow] with [protectionThresholdFor]) — when
+  /// given, the advice names the actual predicted window/end time instead of
+  /// a generic time of day. [protectionStart] may be null (the window's
+  /// start isn't reliably known from available data) while [protectionEnd]
+  /// is given, in which case the advice only mentions the end.
   static UvScale forValue(double uvi, AppLocalizations l10n,
       {String? protectionStart, String? protectionEnd}) {
-    if (uvi < 3) {
+    if (uvi < moderateThreshold) {
       return UvScale._(l10n.uvLow, colorForValue(uvi), l10n.adviceLow);
-    } else if (uvi < 6) {
+    } else if (uvi < highThreshold) {
       return UvScale._(
-          l10n.uvModerate, colorForValue(uvi), l10n.adviceModerate);
-    } else if (uvi < 8) {
-      final String advice;
-      if (protectionStart != null && protectionEnd != null) {
-        advice = l10n.adviceHighWindow(protectionStart, protectionEnd);
-      } else if (protectionEnd != null) {
-        advice = l10n.adviceHighUntil(protectionEnd);
-      } else {
-        advice = l10n.adviceHigh;
-      }
-      return UvScale._(l10n.uvHigh, colorForValue(uvi), advice);
-    } else if (uvi < 11) {
+          l10n.uvModerate,
+          colorForValue(uvi),
+          _protectionAdvice(
+            start: protectionStart,
+            end: protectionEnd,
+            window: l10n.adviceModerateWindow,
+            until: l10n.adviceModerateUntil,
+            generic: l10n.adviceModerate,
+          ));
+    } else if (uvi < veryHighThreshold) {
       return UvScale._(
-          l10n.uvVeryHigh, colorForValue(uvi), l10n.adviceVeryHigh);
+          l10n.uvHigh,
+          colorForValue(uvi),
+          _protectionAdvice(
+            start: protectionStart,
+            end: protectionEnd,
+            window: l10n.adviceHighWindow,
+            until: l10n.adviceHighUntil,
+            generic: l10n.adviceHigh,
+          ));
+    } else if (uvi < extremeThreshold) {
+      return UvScale._(
+          l10n.uvVeryHigh,
+          colorForValue(uvi),
+          _protectionAdvice(
+            start: protectionStart,
+            end: protectionEnd,
+            window: l10n.adviceVeryHighWindow,
+            until: l10n.adviceVeryHighUntil,
+            generic: l10n.adviceVeryHigh,
+          ));
     } else {
-      return UvScale._(l10n.uvExtreme, colorForValue(uvi), l10n.adviceExtreme);
+      return UvScale._(
+          l10n.uvExtreme,
+          colorForValue(uvi),
+          _protectionAdvice(
+            start: protectionStart,
+            end: protectionEnd,
+            window: l10n.adviceExtremeWindow,
+            until: l10n.adviceExtremeUntil,
+            generic: l10n.adviceExtreme,
+          ));
     }
+  }
+
+  static String _protectionAdvice({
+    required String? start,
+    required String? end,
+    required String Function(String start, String end) window,
+    required String Function(String end) until,
+    required String generic,
+  }) {
+    if (start != null && end != null) return window(start, end);
+    if (end != null) return until(end);
+    return generic;
   }
 
   /// Color band only — usable without [AppLocalizations] (e.g. the

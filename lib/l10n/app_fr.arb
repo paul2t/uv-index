@@ -12,11 +12,17 @@
 
   "adviceLow": "Aucune protection nécessaire. Vous pouvez sortir sans risque.",
   "adviceModerate": "Portez de la crème solaire et recherchez l'ombre à la mi-journée.",
+  "adviceModerateWindow": "Portez de la crème solaire et recherchez l'ombre de {start} à {end}.",
+  "adviceModerateUntil": "Portez de la crème solaire et recherchez l'ombre jusqu'à {end}.",
   "adviceHigh": "Protection indispensable. Chapeau, crème solaire, ombre à la mi-journée.",
   "adviceHighWindow": "Protection indispensable. Chapeau, crème solaire, ombre de {start} à {end}.",
   "adviceHighUntil": "Protection indispensable. Chapeau, crème solaire, ombre jusqu'à {end}.",
   "adviceVeryHigh": "Protection renforcée. Évitez le soleil à la mi-journée. Renouvelez la crème solaire.",
+  "adviceVeryHighWindow": "Protection renforcée. Évitez le soleil de {start} à {end}. Renouvelez la crème solaire.",
+  "adviceVeryHighUntil": "Protection renforcée. Évitez le soleil jusqu'à {end}. Renouvelez la crème solaire.",
   "adviceExtreme": "Prenez toutes les précautions. Évitez de sortir à la mi-journée.",
+  "adviceExtremeWindow": "Prenez toutes les précautions. Évitez de sortir de {start} à {end}.",
+  "adviceExtremeUntil": "Prenez toutes les précautions. Évitez de sortir jusqu'à {end}.",
 
   "minutesToBurn": "~{minutes} min avant coup de soleil (sans protection)",
 
