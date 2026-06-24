@@ -11,7 +11,9 @@ class UvDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final scale = UvScale.forValue(uvi, l10n);
+    // Color (and label) come from the rounded value shown below — not the
+    // raw reading — so the band and the number displayed always agree.
+    final scale = UvScale.forValue(uvi.roundToDouble(), l10n);
 
     return Container(
       width: 220,
