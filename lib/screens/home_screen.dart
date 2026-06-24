@@ -333,7 +333,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final l10n = AppLocalizations.of(context)!;
     final data = _data!;
     final currentUvi = data.interpolatedNow;
-    final window = data.todaysProtectionWindow;
+    // Window uses the High band's own threshold, not the broader "any
+    // protection needed" threshold, so the range shown actually matches the
+    // High-UV value the card is describing.
+    final window = data.todaysProtectionWindow(threshold: UvScale.highThreshold);
     // Color, label, and advice come from the rounded value — matching the
     // dial and the widget — so the card's tint never disagrees with the
     // number shown just above it.

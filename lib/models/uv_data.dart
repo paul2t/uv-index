@@ -218,15 +218,18 @@ class UvData {
 
   /// Today's predicted protection window — the interpolated, minute-
   /// precision start and end of the period during which UV is at or above
-  /// [UvScale.safeThreshold]. [end] is always present (falling back to
+  /// [threshold] (defaults to [UvScale.safeThreshold], but callers
+  /// describing a specific band — e.g. the "High" advice card — should pass
+  /// that band's own threshold so the window shown actually corresponds to
+  /// the value being described). [end] is always present (falling back to
   /// midnight tonight if UV is predicted to stay above the threshold for
   /// the rest of the day). [start] is null when it can't actually be
   /// grounded in known data — e.g. a 12-hour history window doesn't reach
   /// far enough back to cover this morning's rise, or there's no history
   /// at all yet (a fresh install) — rather than guessing midnight or
   /// "now" from a flat extrapolation.
-  ({DateTime? start, DateTime end}) get todaysProtectionWindow {
-    final threshold = UvScale.safeThreshold;
+  ({DateTime? start, DateTime end}) todaysProtectionWindow(
+      {double threshold = UvScale.safeThreshold}) {
     final now = DateTime.now();
     final dayStart = DateTime(now.year, now.month, now.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
