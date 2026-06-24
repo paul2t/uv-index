@@ -30,7 +30,9 @@ class LocationFailure extends LocationResult {
 /// Wraps geolocator with permission handling. Coarse accuracy is enough
 /// for UV index — it only varies over tens of kilometres.
 class LocationService {
-  Future<LocationResult> getCurrentLocation() async {
+  Future<LocationResult> getCurrentLocation({
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final manual = await SettingsService.getManualLocation();
     if (manual != null) {
       return LocationSuccess(manual.latitude, manual.longitude);
@@ -55,9 +57,9 @@ class LocationService {
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
+        locationSettings: LocationSettings(
           accuracy: LocationAccuracy.low, // coarse is plenty for UV
-          timeLimit: Duration(seconds: 15),
+          timeLimit: timeout,
         ),
       );
       return LocationSuccess(position.latitude, position.longitude);
@@ -67,4 +69,9 @@ class LocationService {
       return LocationFailure(LocationFailureReason.unknown, detail: '$e');
     }
   }
+
+  /// Great-circle distance between two coordinates, in meters.
+  static double distanceBetween(
+          double lat1, double lng1, double lat2, double lng2) =>
+      Geolocator.distanceBetween(lat1, lng1, lat2, lng2);
 }

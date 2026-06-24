@@ -79,6 +79,18 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // GPS often takes a while to lock on. Rather than make the user wait the
+  // full time on every open, try briefly first; if that times out, use
+  // where we were last time (logged in the cached data) to fetch right
+  // away, and only fall all the way back to waiting on a fresh location if
+  // we have no previous position at all.
+  static const _quickLocationTimeout = Duration(seconds: 2);
+  static const _fullLocationTimeout = Duration(seconds: 15);
+
+  // Below this, a better location fix isn't worth a second, visible fetch
+  // — UV index doesn't vary meaningfully over short distances.
+  static const _significantMoveMeters = 20000.0;
+
   Future<void> _load() async {
     // Only blank the screen to a spinner on the very first load. If we
     // already have data on screen (e.g. returning from Settings, or a
@@ -94,10 +106,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Nudge the widget from cached history/forecast data right away —
     // cheap and network-free — before attempting the real API fetch below.
-    final interpolated = await _uvService.interpolateFromCache();
-    if (interpolated != null) unawaited(WidgetService.update(interpolated));
+    final cached = await _uvService.loadCached();
+    if (cached != null) {
+      unawaited(WidgetService.update(
+          cached.data.interpolatedUvi(DateTime.now())));
+    }
 
-    final locationResult = await _locationService.getCurrentLocation();
+    var locationResult =
+        await _locationService.getCurrentLocation(timeout: _quickLocationTimeout);
+
+    if (locationResult is LocationFailure &&
+        locationResult.reason == LocationFailureReason.timeout) {
+      if (cached != null) {
+        locationResult =
+            LocationSuccess(cached.data.latitude, cached.data.longitude);
+        unawaited(_refineLocationInBackground(
+            cached.data.latitude, cached.data.longitude));
+      } else {
+        // No previous position to fall back to — give it more time.
+        locationResult = await _locationService
+            .getCurrentLocation(timeout: _fullLocationTimeout);
+      }
+    }
 
     if (locationResult is LocationFailure) {
       if (!mounted) return;
@@ -111,24 +141,53 @@ class _HomeScreenState extends State<HomeScreen> {
     final loc = locationResult as LocationSuccess;
     try {
       final data = await _uvService.fetch(loc.latitude, loc.longitude);
-      unawaited(WidgetService.update(data.now.uvi));
-      unawaited(NotificationService.checkAndNotify(data));
-      unawaited(BackgroundService.scheduleNextTick(data));
-      if (!mounted) return;
-      setState(() {
-        _data = data;
-        _fetchedAt = DateTime.now();
-        _isStale = false;
-        _status = _Status.ready;
-        _refreshing = false;
-      });
-      _scheduleUiTick();
+      await _applySuccessfulFetch(data);
     } catch (e) {
       if (!mounted) return;
       _showFetchError('${AppLocalizations.of(context)!.networkError}\n$e');
       await _fallbackToCache(AppLocalizations.of(context)!.networkError);
       if (mounted) setState(() => _refreshing = false);
     }
+  }
+
+  /// Quietly checks for a more accurate position after we've already shown
+  /// data for the last-known one — no progress indicator, since the user
+  /// already has something on screen. Only triggers a second, visible
+  /// fetch if the better fix turns out to be at least
+  /// [_significantMoveMeters] away from the position we just used.
+  Future<void> _refineLocationInBackground(double oldLat, double oldLng) async {
+    final refined = await _locationService
+        .getCurrentLocation(timeout: _fullLocationTimeout);
+    if (refined is! LocationSuccess) return;
+
+    final movedMeters = LocationService.distanceBetween(
+        oldLat, oldLng, refined.latitude, refined.longitude);
+    if (movedMeters < _significantMoveMeters) return;
+
+    if (!mounted) return;
+    setState(() => _refreshing = true);
+    try {
+      final data = await _uvService.fetch(refined.latitude, refined.longitude);
+      await _applySuccessfulFetch(data);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _refreshing = false);
+    }
+  }
+
+  Future<void> _applySuccessfulFetch(UvData data) async {
+    unawaited(WidgetService.update(data.now.uvi));
+    unawaited(NotificationService.checkAndNotify(data));
+    unawaited(BackgroundService.scheduleNextTick(data));
+    if (!mounted) return;
+    setState(() {
+      _data = data;
+      _fetchedAt = DateTime.now();
+      _isStale = false;
+      _status = _Status.ready;
+      _refreshing = false;
+    });
+    _scheduleUiTick();
   }
 
   /// Surfaces the exact failure reason in a SnackBar so it's visible
