@@ -213,7 +213,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _applySuccessfulFetch(UvData data) async {
-    final widgetUpdate = WidgetService.update(data.now.uvi);
+    // Interpolated, not data.now.uvi directly — the API's `now` is anchored
+    // to a fixed past hour, so pushing it as-is would overwrite whatever
+    // the tick chain already correctly advanced the widget to.
+    final widgetUpdate = WidgetService.update(data.interpolatedNow);
     unawaited(NotificationService.checkAndNotify(data));
     final tickSchedule = BackgroundService.scheduleNextTick(data);
     if (!mounted) return;

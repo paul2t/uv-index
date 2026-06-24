@@ -48,7 +48,9 @@ Future<void> _runRefresh() async {
     if (locationResult is LocationSuccess) {
       final data =
           await uvService.fetch(locationResult.latitude, locationResult.longitude);
-      await WidgetService.update(data.now.uvi);
+      // Interpolated, not data.now.uvi directly — see the matching comment
+      // in home_screen.dart's _applySuccessfulFetch.
+      await WidgetService.update(data.interpolatedNow);
       await NotificationService.initialize();
       await NotificationService.checkAndNotify(data);
       await BackgroundService.scheduleNextTick(data);
