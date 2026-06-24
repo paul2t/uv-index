@@ -1,4 +1,5 @@
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/uv_scale.dart';
 
 /// Pushes the latest UV reading to the Android home-screen widget. [uvi]
@@ -7,6 +8,7 @@ import '../utils/uv_scale.dart';
 /// the API is actually called.
 class WidgetService {
   static const String _androidWidgetName = 'UvWidgetSmallProvider';
+  static const String _lastUpdateKey = 'widget_last_update_ms';
 
   static Future<void> update(double uvi) async {
     // Color is derived from the same rounded value shown on the widget —
@@ -19,5 +21,17 @@ class WidgetService {
     await HomeWidget.saveWidgetData<int>('uv_color', color.toARGB32());
 
     await HomeWidget.updateWidget(androidName: _androidWidgetName);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lastUpdateKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  /// The last time [update] actually pushed data to the widget, from any
+  /// source (a foreground tick, a background tick, or a fresh fetch).
+  /// Debug-only — surfaced in the UI to verify the update scheduling.
+  static Future<DateTime?> lastUpdateTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_lastUpdateKey);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
 }

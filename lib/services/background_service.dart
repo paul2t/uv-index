@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import '../models/uv_data.dart';
 import 'location_service.dart';
@@ -92,16 +93,21 @@ class BackgroundService {
     await _registerPeriodicTask(minutes);
   }
 
+  static const String _nextTickKey = 'widget_next_tick_ms';
+
   /// Predicts when [data]'s interpolated UV index will next cross a
   /// rounding boundary and schedules a one-off tick task for that moment,
   /// replacing any tick already pending. Cancels the pending tick if no
   /// future change can be predicted (e.g. forecast data exhausted).
   static Future<void> scheduleNextTick(UvData data) async {
     final next = data.nextChangeTime(DateTime.now());
+    final prefs = await SharedPreferences.getInstance();
     if (next == null) {
       await Workmanager().cancelByUniqueName(uvTickTaskName);
+      await prefs.remove(_nextTickKey);
       return;
     }
+    await prefs.setInt(_nextTickKey, next.millisecondsSinceEpoch);
     final delay = next.difference(DateTime.now());
     await Workmanager().registerOneOffTask(
       uvTickTaskName,
@@ -109,6 +115,15 @@ class BackgroundService {
       initialDelay: delay < _minTickDelay ? _minTickDelay : delay,
       existingWorkPolicy: ExistingWorkPolicy.replace,
     );
+  }
+
+  /// The next moment a background tick is scheduled to push an updated
+  /// value to the widget (the rounded-integer crossing, independent of the
+  /// foreground app's finer-grained ticking). Debug-only.
+  static Future<DateTime?> nextBackgroundTickTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_nextTickKey);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
 
   static Future<void> _registerPeriodicTask(int minutes) async {

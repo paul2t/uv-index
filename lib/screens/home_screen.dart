@@ -24,7 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 enum _Status { loading, ready, error }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final _uvService = UvService();
   final _locationService = LocationService();
 
@@ -37,16 +37,32 @@ class _HomeScreenState extends State<HomeScreen> {
   SkinType _skinType = SkinType.iii;
   Timer? _uiTickTimer;
 
+  // Debug-only: surfaced in the UI to verify the widget update scheduling.
+  DateTime? _debugNextForegroundTick; // when the in-app timer above will fire
+  DateTime? _debugNextBackgroundTick; // from BackgroundService, persisted
+  DateTime? _debugLastWidgetUpdate; // from WidgetService, persisted
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _uiTickTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pick up anything the background tick chain did while the app was
+    // away — otherwise the debug panel only reflects this isolate's view.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshDebugInfo());
+    }
   }
 
   /// Refreshes the displayed UV value, advice, and safe/unsafe predictions
@@ -61,8 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _scheduleUiTick() {
     _uiTickTimer?.cancel();
     final data = _data;
-    if (data == null) return;
+    if (data == null) {
+      setState(() => _debugNextForegroundTick = null);
+      return;
+    }
     final next = data.nextChangeTime(DateTime.now(), step: _uiTickStep);
+    setState(() => _debugNextForegroundTick = next);
     if (next == null) return;
     final delay = next.difference(DateTime.now());
     _uiTickTimer = Timer(delay < _minUiTickDelay ? _minUiTickDelay : delay, () {
@@ -73,9 +93,24 @@ class _HomeScreenState extends State<HomeScreen> {
       // can lag behind while the app sits open and visibly ticking.
       final current = _data;
       if (current != null) {
-        unawaited(WidgetService.update(current.interpolatedNow));
+        unawaited(
+            WidgetService.update(current.interpolatedNow).then((_) => _refreshDebugInfo()));
       }
       _scheduleUiTick();
+    });
+  }
+
+  /// Re-reads the persisted debug timestamps (last widget push, next
+  /// background tick) so the debug panel reflects updates made by other
+  /// isolates (the background tick chain) or by [WidgetService] calls this
+  /// method doesn't directly follow.
+  Future<void> _refreshDebugInfo() async {
+    final lastUpdate = await WidgetService.lastUpdateTime();
+    final nextBackgroundTick = await BackgroundService.nextBackgroundTickTime();
+    if (!mounted) return;
+    setState(() {
+      _debugLastWidgetUpdate = lastUpdate;
+      _debugNextBackgroundTick = nextBackgroundTick;
     });
   }
 
@@ -108,8 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // cheap and network-free — before attempting the real API fetch below.
     final cached = await _uvService.loadCached();
     if (cached != null) {
-      unawaited(WidgetService.update(
-          cached.data.interpolatedUvi(DateTime.now())));
+      unawaited(WidgetService.update(cached.data.interpolatedUvi(DateTime.now()))
+          .then((_) => _refreshDebugInfo()));
+    } else {
+      unawaited(_refreshDebugInfo());
     }
 
     var locationResult =
@@ -176,9 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _applySuccessfulFetch(UvData data) async {
-    unawaited(WidgetService.update(data.now.uvi));
+    final widgetUpdate = WidgetService.update(data.now.uvi);
     unawaited(NotificationService.checkAndNotify(data));
-    unawaited(BackgroundService.scheduleNextTick(data));
+    final tickSchedule = BackgroundService.scheduleNextTick(data);
     if (!mounted) return;
     setState(() {
       _data = data;
@@ -188,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _refreshing = false;
     });
     _scheduleUiTick();
+    unawaited(Future.wait([widgetUpdate, tickSchedule]).then((_) => _refreshDebugInfo()));
   }
 
   /// Surfaces the exact failure reason in a SnackBar so it's visible
@@ -239,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _status = _Status.ready;
       });
       _scheduleUiTick();
+      unawaited(_refreshDebugInfo());
     } else {
       setState(() {
         _errorMessage = reason;
@@ -379,8 +418,55 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Text(l10n.dataAttribution,
               style: TextStyle(fontSize: 11, color: Colors.grey[400])),
         ),
+        const SizedBox(height: 16),
+        _buildDebugPanel(data),
       ],
     );
+  }
+
+  /// Debug-only panel showing widget update scheduling: when the widget's
+  /// displayed value is next expected to change, when the next push to the
+  /// widget (foreground or background tick, whichever comes first) is
+  /// scheduled for, and when it was last actually updated.
+  Widget _buildDebugPanel(UvData data) {
+    final nextValueChange = data.nextChangeTime(DateTime.now());
+    final nextPushCandidates = [_debugNextForegroundTick, _debugNextBackgroundTick]
+        .whereType<DateTime>()
+        .toList()
+      ..sort();
+    final nextPush = nextPushCandidates.isEmpty ? null : nextPushCandidates.first;
+
+    const labelStyle = TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace');
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('DEBUG',
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey[500])),
+          const SizedBox(height: 4),
+          Text('Widget value expected to change: ${_formatDebugTime(nextValueChange)}',
+              style: labelStyle),
+          Text('Next widget push: ${_formatDebugTime(nextPush)}', style: labelStyle),
+          Text('Last widget update: ${_formatDebugTime(_debugLastWidgetUpdate)}',
+              style: labelStyle),
+        ],
+      ),
+    );
+  }
+
+  /// HH:mm:ss, always 24h — debug-only, deliberately not locale-formatted.
+  String _formatDebugTime(DateTime? t) {
+    if (t == null) return '—';
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    final s = t.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
   }
 
   /// Locale-aware hour formatting: 24h digits for French, 12h am/pm short
