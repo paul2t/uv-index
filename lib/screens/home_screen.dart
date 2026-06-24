@@ -292,7 +292,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final data = _data!;
     final currentUvi = data.interpolatedNow;
     final window = data.todaysProtectionWindow;
-    final scale = UvScale.forValue(currentUvi, l10n,
+    // Color, label, and advice come from the rounded value — matching the
+    // dial and the widget — so the card's tint never disagrees with the
+    // number shown just above it.
+    final scale = UvScale.forValue(currentUvi.roundToDouble(), l10n,
         protectionStart:
             window.start != null ? _formatTime(context, window.start!) : null,
         protectionEnd: _formatTime(context, window.end));
